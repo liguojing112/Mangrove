@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans text-gray-800 antialiased;
+  }
+
+  ::selection {
+    @apply bg-mangrove-200 text-mangrove-900;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-2xl shadow-card border border-gray-100;
+  }
+
+  .card-hover {
+    @apply card transition-shadow duration-200 hover:shadow-card-hover;
+  }
+
+  .btn-primary {
+    @apply bg-mangrove-700 text-white px-6 py-2.5 rounded-xl font-medium
+           hover:bg-mangrove-800 active:bg-mangrove-900
+           transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-mangrove-500 focus:ring-offset-2;
+  }
+
+  .btn-outline {
+    @apply border-2 border-mangrove-700 text-mangrove-700 px-6 py-2.5 rounded-xl font-medium
+           hover:bg-mangrove-50 active:bg-mangrove-100
+           transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-mangrove-500 focus:ring-offset-2;
+  }
+
+  .section-title {
+    @apply text-2xl font-bold text-gray-900;
+  }
+
+  .tag {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
+           bg-mangrove-100 text-mangrove-800;
+  }
+}
