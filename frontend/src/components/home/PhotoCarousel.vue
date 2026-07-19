@@ -1,8 +1,6 @@
 <template>
   <div
-    class="rounded-2xl overflow-hidden"
-    @mouseenter="onMouseEnter"
-    @mouseleave="onMouseLeave"
+    class="rounded-2xl overflow-hidden h-[420px] lg:h-[520px] opacity-75 hover:opacity-100 transition-opacity duration-300"
   >
     <Swiper
       :modules="modules"
@@ -11,16 +9,18 @@
       :autoplay="autoplayConfig"
       :speed="600"
       :pagination="{ clickable: true }"
-      class="h-[420px] lg:h-full"
+      class="h-full"
     >
       <SwiperSlide v-for="(slide, i) in slides" :key="i">
         <div
           class="w-full h-full flex items-center justify-center relative"
-          :class="slide.bg"
+          :class="slide.bg || 'bg-gray-200'"
         >
-          <div class="text-center px-6">
+          <img v-if="slide.url" :src="slide.url" :alt="slide.title" class="absolute inset-0 w-full h-full object-cover" />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div class="absolute bottom-0 left-0 right-0 px-6 pb-5 text-center z-10">
             <h3 class="text-xl font-bold text-white drop-shadow-sm">{{ slide.title }}</h3>
-            <p class="text-sm text-white/80 mt-2">{{ slide.date }}</p>
+            <p class="text-sm text-white/80 mt-1">{{ slide.date }}</p>
           </div>
         </div>
       </SwiperSlide>
@@ -29,7 +29,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, Pagination } from 'swiper/modules'
 import 'swiper/css'
@@ -42,9 +42,7 @@ const autoplayConfig = {
   disableOnInteraction: false
 }
 
-const swiperRef = ref(null)
-
-const slides = [
+const fallbackSlides = [
   { bg: 'bg-gradient-to-br from-mangrove-300 to-mangrove-500', title: '舞台瞬间', date: '2025-06-20' },
   { bg: 'bg-gradient-to-br from-mangrove-200 to-mangrove-400', title: '机场路透', date: '2025-06-18' },
   { bg: 'bg-gradient-to-br from-mangrove-400 to-mangrove-700', title: '签售会', date: '2025-06-15' },
@@ -53,15 +51,24 @@ const slides = [
   { bg: 'bg-gradient-to-br from-mangrove-300 to-mangrove-600', title: '粉丝见面', date: '2025-06-08' }
 ]
 
-function onMouseEnter(e) {
-  const swiper = e.target?.querySelector('.swiper')?.swiper
-  if (swiper?.autoplay) swiper.autoplay.stop()
-}
+const slides = ref(fallbackSlides)
 
-function onMouseLeave(e) {
-  const swiper = e.target?.querySelector('.swiper')?.swiper
-  if (swiper?.autoplay) swiper.autoplay.start()
-}
+onMounted(async () => {
+  try {
+    const res = await fetch('/api/public/homepage-items/PHOTO')
+    const json = await res.json()
+    if (json.code === 200 && json.data?.length > 0) {
+      slides.value = json.data.map(item => ({
+        url: item.extraData?.url || '',
+        title: item.extraData?.title || '',
+        date: item.extraData?.description || '',
+        bg: ''
+      }))
+    }
+  } catch (e) {
+    console.error('获取首页照片失败:', e)
+  }
+})
 </script>
 
 <style scoped>

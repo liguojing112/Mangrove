@@ -40,5 +40,11 @@ Thumbs.db
 # Uploaded files (keep directory structure if needed)
 uploads/
 
+# Build output
+frontend/output/
+
+# Binaries
+frontend/cloudflared.exe.exe
+
 # Environment
 .env

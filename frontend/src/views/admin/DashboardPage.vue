@@ -62,46 +62,64 @@
       </div>
     </div>
 
-    <!-- 最近上传 -->
-    <div class="card">
-      <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h2 class="text-sm font-semibold text-gray-800">最近上传</h2>
-        <span class="text-xs text-gray-400">{{ recentFiles.length }} 条</span>
-      </div>
-      <div v-if="recentFiles.length > 0" class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="bg-gray-50">
-              <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-5 py-3">标题</th>
-              <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-5 py-3">分类</th>
-              <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-5 py-3">日期</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="file in recentFiles"
-              :key="file.id"
-              class="border-b border-gray-100 hover:bg-gray-50"
-            >
-              <td class="px-5 py-3 text-gray-800">{{ file.title }}</td>
-              <td class="px-5 py-3">
-                <span class="tag">{{ getCategoryLabel(file.category) }}</span>
-              </td>
-              <td class="px-5 py-3 text-gray-500">{{ formatDate(file.createdAt) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div v-else class="px-5 py-12 text-center text-sm text-gray-400">
-        暂无上传内容，请先在「媒体管理」中添加照片或视频
+    <!-- 芒果园背景图设置 -->
+    <div class="card p-5 mb-8">
+      <h2 class="text-sm font-semibold text-gray-800 mb-4">🌳 芒果园 - 背景图设置</h2>
+      <div class="flex items-start gap-6">
+        <div class="w-48 h-32 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
+          <img v-if="treeBgUrl" :src="treeBgUrl" class="w-full h-full object-cover" />
+          <TreePine v-else class="w-8 h-8 text-gray-300" />
+        </div>
+        <div class="flex-1">
+          <p class="text-sm text-gray-600 mb-3">上传芒果园大树页面的全屏背景图，建议 1920×1080 以上</p>
+          <div class="flex items-center gap-3">
+            <label class="btn-outline text-sm cursor-pointer flex items-center gap-2">
+              <Upload class="w-4 h-4" /> 选择图片
+              <input type="file" accept="image/*" class="hidden" @change="handleTreeBgUpload" />
+            </label>
+            <button v-if="treeBgUrl" class="btn-outline text-sm text-red-500 flex items-center gap-2" @click="removeTreeBg">
+              <Trash2 class="w-4 h-4" /> 移除
+            </button>
+            <span v-if="treeBgUploading" class="text-sm text-gray-400">上传中...</span>
+            <span v-else-if="treeBgUrl" class="text-sm text-green-600 flex items-center gap-1"><CheckCircle class="w-4 h-4" /> 已设置</span>
+          </div>
+          <p v-if="treeBgMsg" class="text-xs mt-2" :class="treeBgMsg.startsWith('✓') ? 'text-green-600' : 'text-red-500'">{{ treeBgMsg }}</p>
+        </div>
       </div>
     </div>
+
+    <!-- 小树背景图设置 -->
+    <div class="card p-5 mb-8">
+      <h2 class="text-sm font-semibold text-gray-800 mb-4">🌱 我的小树 - 背景图设置</h2>
+      <div class="flex items-start gap-6">
+        <div class="w-48 h-32 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
+          <img v-if="littleTreeBgUrl" :src="littleTreeBgUrl" class="w-full h-full object-cover" />
+          <TreePine v-else class="w-8 h-8 text-gray-300" />
+        </div>
+        <div class="flex-1">
+          <p class="text-sm text-gray-600 mb-3">上传"我的小树"页面的背景图，建议与芒果园风格一致</p>
+          <div class="flex items-center gap-3">
+            <label class="btn-outline text-sm cursor-pointer flex items-center gap-2">
+              <Upload class="w-4 h-4" /> 选择图片
+              <input type="file" accept="image/*" class="hidden" @change="handleLittleTreeBgUpload" />
+            </label>
+            <button v-if="littleTreeBgUrl" class="btn-outline text-sm text-red-500 flex items-center gap-2" @click="removeLittleTreeBg">
+              <Trash2 class="w-4 h-4" /> 移除
+            </button>
+            <span v-if="littleTreeBgUploading" class="text-sm text-gray-400">上传中...</span>
+            <span v-else-if="littleTreeBgUrl" class="text-sm text-green-600 flex items-center gap-1"><CheckCircle class="w-4 h-4" /> 已设置</span>
+          </div>
+          <p v-if="littleTreeBgMsg" class="text-xs mt-2" :class="littleTreeBgMsg.startsWith('✓') ? 'text-green-600' : 'text-red-500'">{{ littleTreeBgMsg }}</p>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Users, PenTool, Gift, FileText, ShieldCheck, Upload, Image, CheckCircle, FolderOpen } from 'lucide-vue-next'
+import { Users, PenTool, Gift, FileText, ShieldCheck, Upload, Image, CheckCircle, FolderOpen, TreePine, Trash2 } from 'lucide-vue-next'
 
 const stats = ref([
   { label: '艺人', value: 0, icon: Users },
@@ -110,7 +128,6 @@ const stats = ref([
   { label: '用户', value: 0, icon: Gift },
 ])
 
-const recentFiles = ref([])
 const loading = ref(true)
 
 // 封面上传
@@ -169,7 +186,135 @@ function getToken() {
   return localStorage.getItem('mangrove_token')
 }
 
+// 芒果园背景图
+const treeBgUrl = ref('')
+const treeBgUploading = ref(false)
+const treeBgMsg = ref('')
+
+async function fetchTreeBg() {
+  try {
+    const res = await fetch('/api/admin/config/tree_background_url', {
+      headers: { Authorization: `Bearer ${getToken()}` }
+    })
+    const json = await res.json()
+    if (json.code === 200 && json.data) treeBgUrl.value = json.data
+  } catch {}
+}
+
+async function handleTreeBgUpload(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  treeBgUploading.value = true
+  treeBgMsg.value = ''
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch('/api/files/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${getToken()}` },
+      body: formData
+    })
+    const json = await res.json()
+    if (json.code !== 200) throw new Error(json.msg || '上传失败')
+    const url = json.data.url
+    await fetch('/api/admin/config/tree_background_url', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ value: url })
+    })
+    treeBgUrl.value = url
+    treeBgMsg.value = '✓ 背景图已更新'
+    setTimeout(() => { treeBgMsg.value = '' }, 3000)
+  } catch (err) {
+    treeBgMsg.value = '✗ ' + err.message
+  } finally {
+    treeBgUploading.value = false
+    e.target.value = ''
+  }
+}
+
+async function removeTreeBg() {
+  if (!confirm('确认移除芒果园背景图？')) return
+  try {
+    await fetch('/api/admin/config/tree_background_url', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ value: '' })
+    })
+    treeBgUrl.value = ''
+    treeBgMsg.value = '✓ 背景图已移除'
+    setTimeout(() => { treeBgMsg.value = '' }, 3000)
+  } catch (err) {
+    treeBgMsg.value = '✗ ' + err.message
+  }
+}
+
+// 小树背景图
+const littleTreeBgUrl = ref('')
+const littleTreeBgUploading = ref(false)
+const littleTreeBgMsg = ref('')
+
+async function fetchLittleTreeBg() {
+  try {
+    const res = await fetch('/api/admin/config/littletree_background_url', {
+      headers: { Authorization: `Bearer ${getToken()}` }
+    })
+    const json = await res.json()
+    if (json.code === 200 && json.data) littleTreeBgUrl.value = json.data
+  } catch {}
+}
+
+async function handleLittleTreeBgUpload(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  littleTreeBgUploading.value = true
+  littleTreeBgMsg.value = ''
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch('/api/files/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${getToken()}` },
+      body: formData
+    })
+    const json = await res.json()
+    if (json.code !== 200) throw new Error(json.msg || '上传失败')
+    const url = json.data.url
+    await fetch('/api/admin/config/littletree_background_url', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ value: url })
+    })
+    littleTreeBgUrl.value = url
+    littleTreeBgMsg.value = '✓ 背景图已更新'
+    setTimeout(() => { littleTreeBgMsg.value = '' }, 3000)
+  } catch (err) {
+    littleTreeBgMsg.value = '✗ ' + err.message
+  } finally {
+    littleTreeBgUploading.value = false
+    e.target.value = ''
+  }
+}
+
+async function removeLittleTreeBg() {
+  if (!confirm('确认移除小树背景图？')) return
+  try {
+    await fetch('/api/admin/config/littletree_background_url', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ value: '' })
+    })
+    littleTreeBgUrl.value = ''
+    littleTreeBgMsg.value = '✓ 背景图已移除'
+    setTimeout(() => { littleTreeBgMsg.value = '' }, 3000)
+  } catch (err) {
+    littleTreeBgMsg.value = '✗ ' + err.message
+  }
+}
+
 onMounted(async () => {
+  fetchTreeBg()
+  fetchLittleTreeBg()
   try {
     const res = await fetch('/api/admin/dashboard', {
       headers: { 'Authorization': `Bearer ${getToken()}` }
@@ -185,9 +330,6 @@ onMounted(async () => {
           { label: '用户', value: d.stats.userCount || 0, icon: Gift },
         ]
       }
-      if (d.recentUploads) {
-        recentFiles.value = d.recentUploads
-      }
     }
   } catch {
     // 保持默认 0
@@ -196,13 +338,4 @@ onMounted(async () => {
   }
 })
 
-function getCategoryLabel(cat) {
-  const map = { PHOTO: '照片', VIDEO: '视频', WORK: '作品' }
-  return map[cat] || cat
-}
-
-function formatDate(d) {
-  if (!d) return '-'
-  return d.substring(0, 10)
-}
 </script>

@@ -46,6 +46,7 @@ public class AuthServiceImpl implements AuthService {
                 .token(token)
                 .userId(user.getId())
                 .username(user.getUsername())
+                .publicId(user.getPublicId())
                 .nickname(user.getNickname())
                 .role(user.getRole().name())
                 .build();
@@ -64,6 +65,7 @@ public class AuthServiceImpl implements AuthService {
 
         SysUser user = SysUser.builder()
                 .username(req.getUsername())
+                .publicId(generatePublicId())
                 .password(passwordEncoder.encode(req.getPassword()))
                 .nickname(req.getNickname())
                 .email(req.getEmail())
@@ -81,6 +83,8 @@ public class AuthServiceImpl implements AuthService {
                 .consecutiveDays(0)
                 .totalLikes(0)
                 .totalUploads(0)
+                .createdAt(java.time.LocalDateTime.now())
+                .updatedAt(java.time.LocalDateTime.now())
                 .build();
         userTreeRepository.save(tree);
 
@@ -89,6 +93,7 @@ public class AuthServiceImpl implements AuthService {
                 .token(token)
                 .userId(user.getId())
                 .username(user.getUsername())
+                .publicId(user.getPublicId())
                 .nickname(user.getNickname())
                 .role(user.getRole().name())
                 .build();
@@ -102,13 +107,19 @@ public class AuthServiceImpl implements AuthService {
         return UserInfoResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
+                .publicId(user.getPublicId())
                 .nickname(user.getNickname())
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole().name())
                 .bio(user.getBio())
+                .favoriteStartDate(user.getFavoriteStartDate() != null ? user.getFavoriteStartDate().toString() : null)
                 .createdAt(user.getCreatedAt() != null ? user.getCreatedAt().toString() : null)
                 .build();
+    }
+
+    private String generatePublicId() {
+        return "MG" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
     }
 }

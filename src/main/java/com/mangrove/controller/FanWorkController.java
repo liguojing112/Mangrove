@@ -20,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -60,6 +61,42 @@ public class FanWorkController {
         return Result.success(result);
     }
 
+    @GetMapping("/featured")
+    public Result<PageResult<FanWork>> featured(@RequestParam(defaultValue = "0") int page,
+                                                @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        List<FanWork> works = fanWorkRepository.findByStatus(FanWork.Status.FEATURED, pageable);
+        long total = fanWorkRepository.countByStatus(FanWork.Status.FEATURED);
+
+        PageResult<FanWork> result = PageResult.<FanWork>builder()
+                .content(works)
+                .totalElements(total)
+                .totalPages((int) Math.ceil((double) total / size))
+                .currentPage(page)
+                .size(size)
+                .build();
+        return Result.success(result);
+    }
+
+    @GetMapping("/my")
+    public Result<PageResult<FanWork>> myWorks(Authentication authentication,
+                                                @RequestParam(defaultValue = "0") int page,
+                                                @RequestParam(defaultValue = "10") int size) {
+        SysUser user = getCurrentUser(authentication);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        List<FanWork> works = fanWorkRepository.findByCreatorId(user.getId(), pageable);
+        long total = fanWorkRepository.countByCreatorId(user.getId());
+
+        PageResult<FanWork> result = PageResult.<FanWork>builder()
+                .content(works)
+                .totalElements(total)
+                .totalPages((int) Math.ceil((double) total / size))
+                .currentPage(page)
+                .size(size)
+                .build();
+        return Result.success(result);
+    }
+
     @GetMapping("/{id}")
     public Result<FanWork> getById(@PathVariable Long id) {
         FanWork work = fanWorkRepository.findById(id)
@@ -88,10 +125,42 @@ public class FanWorkController {
                 .duration(req.getDuration())
                 .artist(artist)
                 .creator(user)
-                .status(FanWork.Status.PUBLISHED)
+                .status(FanWork.Status.PENDING)
                 .viewCount(0)
                 .likeCount(0)
                 .commentCount(0)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        return Result.success(fanWorkRepository.save(work));
+    }
+
+    @PostMapping("/submit")
+    @Transactional
+    public Result<FanWork> submit(@Valid @RequestBody FanWorkRequest req, Authentication authentication) {
+        SysUser user = getCurrentUser(authentication);
+        Artist artist = null;
+        if (req.getArtistId() != null) {
+            artist = artistRepository.findById(req.getArtistId())
+                    .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND, "艺人不存在"));
+        }
+
+        FanWork work = FanWork.builder()
+                .title(req.getTitle())
+                .description(req.getDescription())
+                .category(FanWork.Category.valueOf(req.getCategory().toUpperCase()))
+                .fileUrl(req.getFileUrl())
+                .coverUrl(req.getCoverUrl())
+                .duration(req.getDuration())
+                .artist(artist)
+                .creator(user)
+                .status(FanWork.Status.PENDING)
+                .viewCount(0)
+                .likeCount(0)
+                .commentCount(0)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
 
         return Result.success(fanWorkRepository.save(work));
@@ -162,6 +231,7 @@ public class FanWorkController {
                     .user(user)
                     .targetType(LikeRecord.TargetType.FAN_WORK)
                     .targetId(id)
+                    .createdAt(java.time.LocalDateTime.now())
                     .build();
             likeRecordRepository.save(record);
             work.setLikeCount(work.getLikeCount() + 1);
@@ -188,6 +258,7 @@ public class FanWorkController {
                     .user(user)
                     .targetType(Favorite.TargetType.FAN_WORK)
                     .targetId(id)
+                    .createdAt(java.time.LocalDateTime.now())
                     .build();
             favoriteRepository.save(fav);
             return Result.success("收藏成功");

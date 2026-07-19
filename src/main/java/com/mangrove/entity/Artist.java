@@ -48,6 +48,12 @@ public class Artist {
     @Column(name = "cover_url", length = 500)
     private String coverUrl;
 
+    @Column(name = "signature_image_url", length = 500)
+    private String signatureImageUrl;
+
+    @Column(name = "brand_image_url", length = 500)
+    private String brandImageUrl;
+
     @Column(name = "sort_order", nullable = false, columnDefinition = "INT DEFAULT 0")
     private Integer sortOrder;
 

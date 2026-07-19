@@ -46,6 +46,15 @@ public class UserTree {
     @Column(name = "consecutive_days", nullable = false, columnDefinition = "INT DEFAULT 0")
     private Integer consecutiveDays;
 
+    @Column(name = "total_checkins", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private Integer totalCheckins;
+
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
+    private Integer points;
+
+    @Column(name = "total_points", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private Integer totalPoints;
+
     @Column(name = "last_checkin_at")
     private LocalDate lastCheckinAt;
 

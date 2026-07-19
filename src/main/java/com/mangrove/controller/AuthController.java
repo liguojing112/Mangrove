@@ -7,12 +7,16 @@ import com.mangrove.dto.request.LoginRequest;
 import com.mangrove.dto.request.RegisterRequest;
 import com.mangrove.dto.response.LoginResponse;
 import com.mangrove.dto.response.UserInfoResponse;
+import com.mangrove.entity.SysUser;
 import com.mangrove.repository.SysUserRepository;
 import com.mangrove.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -39,5 +43,20 @@ public class AuthController {
                 .orElseThrow(() -> new BusinessException(ResultCode.UNAUTHORIZED, "用户不存在"))
                 .getId();
         return Result.success(authService.getCurrentUser(userId));
+    }
+
+    @PutMapping("/me/favorite-date")
+    public Result<Void> updateFavoriteStartDate(@RequestBody Map<String, String> body, Authentication authentication) {
+        String username = authentication.getName();
+        SysUser user = sysUserRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ResultCode.UNAUTHORIZED, "用户不存在"));
+        String dateStr = body.get("favoriteStartDate");
+        if (dateStr == null || dateStr.isBlank()) {
+            user.setFavoriteStartDate(null);
+        } else {
+            user.setFavoriteStartDate(LocalDate.parse(dateStr));
+        }
+        sysUserRepository.save(user);
+        return Result.success(null);
     }
 }

@@ -9,6 +9,9 @@ import java.util.List;
 
 @Repository
 public interface MerchandiseRepository extends JpaRepository<Merchandise, Long> {
+    List<Merchandise> findByProducerIdOrderByCreatedAtDesc(Long producerId);
+
+    long countByProducerId(Long producerId);
 
     List<Merchandise> findByCategoryAndStatus(Merchandise.Category category, Integer status, Pageable pageable);
 

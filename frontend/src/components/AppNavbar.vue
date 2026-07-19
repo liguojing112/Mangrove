@@ -9,11 +9,20 @@
 
         <!-- 桌面端钢琴键标签（居中） -->
         <div class="hidden md:flex items-center justify-center flex-1">
-          <router-link v-for="tab in tabs" :key="tab.to" :to="tab.to"
-            class="shrink-0 relative px-4 py-2 text-sm font-medium rounded-b-lg border border-gray-700 -mx-px first:rounded-l-lg first:ml-0 last:rounded-r-lg last:mr-0"
-            :class="isActive(tab.to) ? 'bg-mangrove-600 text-white shadow-inner translate-y-0.5 z-10 border-mangrove-700 scale-y-95' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 shadow-sm'">
-            {{ tab.label }}
-          </router-link>
+          <template v-for="(tab, idx) in tabs" :key="tab.to">
+            <!-- 芒果树：顶部弧线钢琴键 -->
+            <router-link v-if="tab.special" :to="tab.to"
+              class="shrink-0 relative px-4 py-2 text-sm font-medium border border-gray-700 -mx-px z-10 nav-arc-key"
+              :class="isActive(tab.to) ? 'bg-mangrove-600 text-white shadow-inner border-mangrove-700' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 shadow-sm'">
+              {{ tab.label }}
+            </router-link>
+            <!-- 普通标签 -->
+            <router-link v-else :to="tab.to"
+              class="shrink-0 relative px-4 py-2 text-sm font-medium rounded-b-lg border border-gray-700 -mx-px first:rounded-l-lg first:ml-0 last:rounded-r-lg last:mr-0"
+              :class="isActive(tab.to) ? 'bg-mangrove-600 text-white shadow-inner translate-y-0.5 z-10 border-mangrove-700 scale-y-95' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 shadow-sm'">
+              {{ tab.label }}
+            </router-link>
+          </template>
         </div>
 
         <!-- 右侧用户菜单 -->
@@ -46,13 +55,23 @@
     </div>
 
     <!-- 手机端横滑标签栏 -->
-    <div class="md:hidden overflow-x-auto border-t border-gray-800 bg-gray-900/95" data-tabs="mobile">
+    <div class="md:hidden overflow-x-auto border-t border-gray-800 bg-gray-900/95 touch-pan-x" data-tabs="mobile"
+      @touchstart.stop @touchend.stop>
       <div class="flex items-center gap-0 px-2 py-1">
-        <router-link v-for="tab in tabs" :key="tab.to" :to="tab.to"
-          class="shrink-0 px-3 py-2 text-xs font-medium rounded-full mx-0.5"
-          :class="isActive(tab.to) ? 'bg-mangrove-600 text-white' : 'text-gray-400'">
-          {{ tab.label }}
-        </router-link>
+        <template v-for="tab in tabs" :key="tab.to">
+          <!-- 芒果树：顶部弧线 -->
+          <router-link v-if="tab.special" :to="tab.to"
+            class="shrink-0 px-3 pt-3 pb-2 text-xs font-medium mx-0.5 nav-arc-key-mobile"
+            :class="isActive(tab.to) ? 'bg-mangrove-600 text-white' : 'text-gray-400'">
+            {{ tab.label }}
+          </router-link>
+          <!-- 普通标签 -->
+          <router-link v-else :to="tab.to"
+            class="shrink-0 px-3 py-2 text-xs font-medium rounded-full mx-0.5"
+            :class="isActive(tab.to) ? 'bg-mangrove-600 text-white' : 'text-gray-400'">
+            {{ tab.label }}
+          </router-link>
+        </template>
       </div>
     </div>
   </nav>
@@ -73,15 +92,16 @@ const tabs = [
   { label: '首页', to: '/' },
   { label: '艺人', to: '/artists' },
   { label: '照片', to: '/photos' },
-  { label: '影像', to: '/videos' },
+  { label: '短视频', to: '/videos' },
+  { label: '长视频', to: '/long-videos' },
   { label: '音乐', to: '/music' },
-  { label: '周边', to: '/merchandise' },
+  { label: '芒果树', to: '/tree', special: true },
   { label: '创作', to: '/works' },
+  { label: '周边', to: '/merchandise' },
   { label: '行程', to: '/schedule' },
   { label: '游戏', to: '/games' },
   { label: '社区', to: '/community' },
   { label: '来信', to: '/letters' },
-  { label: '芒果树', to: '/tree' },
 ]
 
 function handleLogout() {
@@ -105,3 +125,28 @@ watch(() => route.path, () => {
   })
 })
 </script>
+
+<style scoped>
+.nav-arc-key {
+  border-radius: 0 0 0.5rem 0.5rem;
+  position: relative;
+}
+.nav-arc-key::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -1px;
+  right: -1px;
+  height: 12px;
+  border-radius: 50% 50% 0 0;
+  border: 1px solid #374151;
+  border-bottom: none;
+  background: inherit;
+}
+.nav-arc-key:hover::before {
+  border-color: #4b5563;
+}
+.nav-arc-key-mobile {
+  border-radius: 50% 50% 0.5rem 0.5rem;
+}
+</style>

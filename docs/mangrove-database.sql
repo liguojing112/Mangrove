@@ -26,6 +26,7 @@ CREATE TABLE `sys_user` (
     `role`          ENUM('FAN','CREATOR','ADMIN')
                                     NOT NULL DEFAULT 'FAN'   COMMENT '角色: FAN-粉丝, CREATOR-创作者, ADMIN-管理员',
     `bio`           VARCHAR(500)    DEFAULT NULL             COMMENT '个人简介',
+    `favorite_start_date` DATE      DEFAULT NULL             COMMENT '喜欢艺人的开始日期',
     `status`        TINYINT         NOT NULL DEFAULT 1       COMMENT '状态: 0-禁用, 1-正常',
     `created_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
     `updated_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -579,3 +580,28 @@ INSERT INTO `tree_decoration` (`name`, `type`, `image_url`, `description`, `unlo
 ('星光灯',   'LIGHT',     '/assets/decorations/light_star.png',     '星星形状的装饰灯',               10, 1000),
 ('陶土花盆', 'POT',       '/assets/decorations/pot_default.png',    '朴素的陶土花盆',                 1,  0),
 ('春日背景', 'BACKGROUND','/assets/decorations/bg_spring.png',     '温暖的春日阳光背景',              2,  100);
+
+
+-- ============================================================
+-- 增量迁移: sys_user 新增 favorite_start_date 字段
+-- 对已有数据库执行此 ALTER TABLE，新安装可跳过
+-- ============================================================
+ALTER TABLE `sys_user` ADD COLUMN `favorite_start_date` DATE DEFAULT NULL COMMENT '喜欢艺人的开始日期' AFTER `bio`;
+
+-- ============================================================
+-- 增量迁移: user_tree 新增积分字段 + tree_journal 表
+-- ============================================================
+ALTER TABLE `user_tree` ADD COLUMN `points` INT NOT NULL DEFAULT 0 COMMENT '可消费积分' AFTER `consecutive_days`;
+ALTER TABLE `user_tree` ADD COLUMN `total_points` INT NOT NULL DEFAULT 0 COMMENT '累计获得积分' AFTER `points`;
+
+CREATE TABLE IF NOT EXISTS `tree_journal` (
+  `id`         BIGINT   NOT NULL AUTO_INCREMENT,
+  `user_id`    BIGINT   NOT NULL,
+  `title`      VARCHAR(200) DEFAULT NULL,
+  `content`    TEXT     NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_user_created` (`user_id`, `created_at` DESC),
+  CONSTRAINT `fk_journal_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户成长记事';

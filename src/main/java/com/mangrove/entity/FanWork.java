@@ -70,6 +70,6 @@ public class FanWork {
     }
 
     public enum Status {
-        DRAFT, PUBLISHED, HIDDEN
+        DRAFT, PENDING, PUBLISHED, HIDDEN, FEATURED
     }
 }

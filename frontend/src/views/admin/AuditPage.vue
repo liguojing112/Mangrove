@@ -1,7 +1,7 @@
 <template>
-  <div class="audit-page">
+  <div class="audit-page min-w-0">
     <!-- 标题 -->
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
       <div>
         <h2 class="text-xl font-bold text-gray-900">内容审核面板</h2>
         <p class="text-sm text-gray-500 mt-1">审核用户上传内容和删除申请</p>

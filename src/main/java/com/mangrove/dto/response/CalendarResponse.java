@@ -15,4 +15,8 @@ public class CalendarResponse {
     private Long loveDays;
     private Long debutDays;
     private Long nextBirthdayDays;
+    private String nextBirthdayDate;
+    private String birthDate;
+    private String debutDate;
+    private String loveStartDate;
 }

@@ -8,7 +8,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/mangrove?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: root
-    password: your-db-password
+    password: root123
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -27,8 +27,8 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 100MB
-      max-request-size: 500MB
+      max-file-size: 500MB
+      max-request-size: 1000MB
       enabled: true
 
   jackson:
@@ -36,11 +36,11 @@ spring:
     time-zone: Asia/Shanghai
     default-property-inclusion: non_null
     serialization:
-      fail-on-empty-beans: false
+      FAIL_ON_EMPTY_BEANS: false
 
 # JWT 配置
 jwt:
-  secret: your-jwt-secret-here
+  secret: YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODlBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWg==
   expiration: 604800000
   header: Authorization
   token-prefix: "Bearer "

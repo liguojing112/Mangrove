@@ -23,13 +23,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FileController {
 
-    private static final long MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+    private static final long MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
     private static final Set<String> ALLOWED_FILE_TYPES = Set.of(
             "image/jpeg", "image/png", "image/gif", "image/webp",
-            "video/mp4", "video/webm", "video/quicktime", "video/x-msvideo"
+            "video/mp4", "video/webm", "video/quicktime", "video/x-msvideo",
+            "audio/mpeg", "audio/wav", "audio/flac", "audio/aac", "audio/ogg", "audio/x-m4a"
     );
 
     private final FileUploadConfig fileUploadConfig;
+    private final com.mangrove.repository.SysConfigRepository sysConfigRepository;
+    private final com.mangrove.repository.ArtistRepository artistRepository;
 
     @PostMapping("/upload")
     public Result<Map<String, String>> upload(@RequestParam("file") MultipartFile file) {
@@ -86,8 +89,21 @@ public class FileController {
             if (!Files.exists(uploadDir)) {
                 return Result.success(List.of());
             }
+
+            // 收集所有背景图 URL，排除它们
+            Set<String> excludedUrls = new HashSet<>();
+            for (String key : List.of("homepage_background_url", "tree_background_url", "littletree_background_url")) {
+                sysConfigRepository.findByConfigKey(key)
+                        .ifPresent(c -> { if (c.getConfigValue() != null && !c.getConfigValue().isBlank()) excludedUrls.add(c.getConfigValue()); });
+            }
+            // 排除艺人封面
+            artistRepository.findAll().forEach(a -> {
+                if (a.getCoverUrl() != null && !a.getCoverUrl().isBlank()) excludedUrls.add(a.getCoverUrl());
+            });
+
             List<Map<String, Object>> files = Files.list(uploadDir)
                 .filter(Files::isRegularFile)
+                .filter(path -> !excludedUrls.contains("/uploads/" + path.getFileName().toString()))
                 .sorted((a, b) -> {
                     try { return Files.getLastModifiedTime(b).compareTo(Files.getLastModifiedTime(a)); }
                     catch (IOException e) { return 0; }
@@ -97,7 +113,10 @@ public class FileController {
                     String filename = path.getFileName().toString();
                     fileInfo.put("filename", filename);
                     fileInfo.put("url", "/uploads/" + filename);
-                    fileInfo.put("fileType", filename.contains(".mp4") || filename.contains(".webm") ? "video/mp4" : "image/jpeg");
+                    fileInfo.put("fileType", filename.contains(".mp4") || filename.contains(".webm") ? "video/mp4" :
+                        filename.endsWith(".mp3") ? "audio/mpeg" : filename.endsWith(".wav") ? "audio/wav" :
+                        filename.endsWith(".flac") ? "audio/flac" : filename.endsWith(".aac") ? "audio/aac" :
+                        filename.endsWith(".ogg") ? "audio/ogg" : filename.endsWith(".m4a") ? "audio/x-m4a" : "image/jpeg");
                     try { fileInfo.put("fileSize", Files.size(path)); }
                     catch (IOException e) { fileInfo.put("fileSize", 0); }
                     try { fileInfo.put("createdAt", Files.getLastModifiedTime(path).toString()); }
@@ -120,8 +139,8 @@ public class FileController {
             throw new BusinessException(ResultCode.BAD_REQUEST, "文件大小不能超过10MB");
         }
         String contentType = file.getContentType();
-        if (contentType == null || !(contentType.startsWith("image/") || contentType.startsWith("video/"))) {
-            throw new BusinessException(ResultCode.BAD_REQUEST, "仅支持图片和视频文件");
+        if (contentType == null || !(contentType.startsWith("image/") || contentType.startsWith("video/") || contentType.startsWith("audio/"))) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "仅支持图片、视频和音频文件");
         }
     }
 
@@ -155,13 +174,42 @@ public class FileController {
     @GetMapping("/categories")
     public Result<List<String>> listCategories() {
         try (java.sql.Connection conn = getDbConnection()) {
-            java.sql.PreparedStatement ps = conn.prepareStatement("SELECT DISTINCT category FROM file_meta WHERE category IS NOT NULL AND category != '' ORDER BY category");
+            java.sql.PreparedStatement ps = conn.prepareStatement(
+                "SELECT DISTINCT category FROM file_meta WHERE category IS NOT NULL AND category != '' ORDER BY category");
             java.sql.ResultSet rs = ps.executeQuery();
             List<String> list = new ArrayList<>();
             while (rs.next()) list.add(rs.getString("category"));
             rs.close(); ps.close();
             return Result.success(list);
         } catch (Exception e) { return Result.success(List.of()); }
+    }
+
+    /** 确保分类存在——插入一条占位元数据 */
+    @PostMapping("/categories")
+    public Result<Void> addCategory(@RequestBody Map<String, String> body) {
+        String name = body.get("name");
+        if (name == null || name.trim().isEmpty()) throw new BusinessException(ResultCode.BAD_REQUEST, "分类名不能为空");
+        try (java.sql.Connection conn = getDbConnection()) {
+            java.sql.PreparedStatement ps = conn.prepareStatement(
+                "INSERT IGNORE INTO file_meta (filename, display_name, seq_no, category) VALUES (?,?,0,?)");
+            ps.setString(1, "_cat_" + name.trim());
+            ps.setString(2, name.trim());
+            ps.setString(3, name.trim());
+            ps.executeUpdate();
+            ps.close();
+            return Result.success();
+        } catch (Exception e) { throw new BusinessException(ResultCode.INTERNAL_ERROR, "保存失败"); }
+    }
+
+    @DeleteMapping("/categories")
+    public Result<Void> deleteCategory(@RequestParam String name) {
+        try (java.sql.Connection conn = getDbConnection()) {
+            java.sql.PreparedStatement ps = conn.prepareStatement("DELETE FROM file_meta WHERE category=?");
+            ps.setString(1, name);
+            ps.executeUpdate();
+            ps.close();
+            return Result.success();
+        } catch (Exception e) { throw new BusinessException(ResultCode.INTERNAL_ERROR, "删除失败"); }
     }
 
     // ─── 文件元数据 ───
@@ -232,6 +280,7 @@ public class FileController {
             throw new BusinessException(ResultCode.BAD_REQUEST,
                     "不支持的文件类型，仅支持 jpg、png、gif、webp、mp4、webm、mov、avi");
         }
+        return null;
     }
 
     private Map<String, String> saveFile(MultipartFile file) {

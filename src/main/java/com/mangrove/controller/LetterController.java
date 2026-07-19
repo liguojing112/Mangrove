@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,39 +30,21 @@ import java.util.Map;
 public class LetterController {
 
     private final LetterNoteRepository letterNoteRepository;
+    private final LetterImageRepository letterImageRepository;
+    private final SysUserRepository sysUserRepository;
     private final ArtistRepository artistRepository;
     private final AlbumRepository albumRepository;
     private final MediaFileRepository mediaFileRepository;
     private final FanWorkRepository fanWorkRepository;
 
     @GetMapping
-    public Result<PageResult<LetterNote>> list(
-            @RequestParam(required = false) Long artistId,
-            @RequestParam(required = false) LetterNote.Category category,
-            @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "10") Integer size) {
-        Pageable pageable;
-        List<LetterNote> letters;
+    public Result<List<LetterNote>> list() {
+        return Result.success(letterNoteRepository.findByStatusOrderByNoteDateDesc(1));
+    }
 
-        if (artistId != null) {
-            pageable = PageRequest.of(page, size);
-            letters = letterNoteRepository.findByArtistIdAndStatusOrderByNoteDateDesc(artistId, 1, pageable);
-        } else if (category != null) {
-            pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "noteDate"));
-            letters = letterNoteRepository.findByCategoryAndStatus(category, 1, pageable);
-        } else {
-            pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "noteDate"));
-            letters = letterNoteRepository.findByStatus(1, pageable);
-        }
-
-        PageResult<LetterNote> result = PageResult.<LetterNote>builder()
-                .content(letters)
-                .totalElements(letters.size())
-                .totalPages(1)
-                .currentPage(page)
-                .size(size)
-                .build();
-        return Result.success(result);
+    @GetMapping("/category/{category}")
+    public Result<List<LetterNote>> listByCategory(@PathVariable String category) {
+        return Result.success(letterNoteRepository.findByCategoryAndStatusOrderByNoteDateDesc(category, 1));
     }
 
     @GetMapping("/{id}")
@@ -82,13 +65,9 @@ public class LetterController {
         Artist artist = artistRepository.findById(artistId)
                 .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND, "艺人不存在"));
 
-        LetterNote.Category category = LetterNote.Category.LETTER;
+        String category = "LETTER";
         if (body.get("category") != null) {
-            try {
-                category = LetterNote.Category.valueOf(body.get("category").toString().toUpperCase());
-            } catch (IllegalArgumentException e) {
-                throw new BusinessException(ResultCode.BAD_REQUEST, "无效的分类参数");
-            }
+            category = body.get("category").toString();
         }
 
         LocalDate noteDate = null;
@@ -97,7 +76,7 @@ public class LetterController {
         }
 
         LetterNote letter = LetterNote.builder()
-                .artist(artist)
+                .artistId(artistId)
                 .title(body.get("title").toString())
                 .content(body.get("content").toString())
                 .category(category)
@@ -123,9 +102,7 @@ public class LetterController {
 
         if (body.get("artistId") != null) {
             Long artistId = Long.valueOf(body.get("artistId").toString());
-            Artist artist = artistRepository.findById(artistId)
-                    .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND, "艺人不存在"));
-            letter.setArtist(artist);
+            letter.setArtistId(artistId);
         }
         if (body.get("title") != null) {
             letter.setTitle(body.get("title").toString());
@@ -134,11 +111,7 @@ public class LetterController {
             letter.setContent(body.get("content").toString());
         }
         if (body.get("category") != null) {
-            try {
-                letter.setCategory(LetterNote.Category.valueOf(body.get("category").toString().toUpperCase()));
-            } catch (IllegalArgumentException e) {
-                throw new BusinessException(ResultCode.BAD_REQUEST, "无效的分类参数");
-            }
+            letter.setCategory(body.get("category").toString());
         }
         if (body.containsKey("source")) {
             letter.setSource(body.get("source") != null ? body.get("source").toString() : null);
@@ -164,6 +137,57 @@ public class LetterController {
         letterNoteRepository.delete(letter);
         log.info("删除来信: id={}", id);
         return Result.success();
+    }
+
+    // ========== 来信图片 ==========
+
+    @GetMapping("/{id}/images")
+    public Result<List<LetterImage>> listImages(@PathVariable Long id) {
+        List<LetterImage> images = letterImageRepository.findByLetterIdOrderByCreatedAtDesc(id);
+        return Result.success(images);
+    }
+
+    @PostMapping("/{id}/images")
+    @Transactional
+    public Result<LetterImage> uploadImage(@PathVariable Long id, @RequestBody Map<String, String> body, Authentication authentication) {
+        String username = authentication.getName();
+        SysUser user = sysUserRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ResultCode.UNAUTHORIZED, "用户不存在"));
+
+        letterNoteRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND, "来信不存在"));
+
+        String imageUrl = body.get("imageUrl");
+        if (imageUrl == null || imageUrl.isBlank()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "图片URL不能为空");
+        }
+
+        LetterImage image = LetterImage.builder()
+                .letterId(id)
+                .user(user)
+                .imageUrl(imageUrl)
+                .createdAt(LocalDateTime.now())
+                .build();
+        letterImageRepository.save(image);
+        return Result.success(image);
+    }
+
+    @DeleteMapping("/{letterId}/images/{imageId}")
+    @Transactional
+    public Result<Void> deleteImage(@PathVariable Long letterId, @PathVariable Long imageId, Authentication authentication) {
+        String username = authentication.getName();
+        SysUser user = sysUserRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ResultCode.UNAUTHORIZED, "用户不存在"));
+
+        LetterImage image = letterImageRepository.findById(imageId)
+                .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND, "图片不存在"));
+
+        if (!image.getUser().getId().equals(user.getId()) && user.getRole() != SysUser.Role.ADMIN && user.getRole() != SysUser.Role.SUPER_ADMIN) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "无权删除此图片");
+        }
+
+        letterImageRepository.deleteById(imageId);
+        return Result.success(null);
     }
 
     @GetMapping("/artists/{id}/detail")

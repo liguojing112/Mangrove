@@ -1,7 +1,7 @@
 <template>
-  <div>
+  <div class="min-w-0">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
       <h2 class="text-lg font-semibold text-gray-900">{{ title }}</h2>
       <button class="btn-primary flex items-center gap-2 text-sm" @click="openCreate">
         <Plus class="w-4 h-4" />

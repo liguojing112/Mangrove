@@ -26,7 +26,7 @@ const route = useRoute()
 const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 
 const tabRoutes = [
-  '/', '/artists', '/photos', '/videos', '/music',
+  '/', '/artists', '/photos', '/videos', '/long-videos', '/music',
   '/merchandise', '/works', '/schedule', '/games', '/community', '/tree'
 ]
 

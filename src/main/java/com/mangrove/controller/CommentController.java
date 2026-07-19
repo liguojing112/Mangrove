@@ -85,9 +85,11 @@ public class CommentController {
                 .targetType(targetType)
                 .targetId(req.getTargetId())
                 .content(req.getContent())
+                .imageUrl(req.getImageUrl())
                 .parent(parentComment)
                 .likeCount(0)
                 .status(1)
+                .createdAt(java.time.LocalDateTime.now())
                 .build();
 
         return Result.success(commentRepository.save(comment));
@@ -128,6 +130,7 @@ public class CommentController {
                     .user(user)
                     .targetType(LikeRecord.TargetType.COMMENT)
                     .targetId(id)
+                    .createdAt(java.time.LocalDateTime.now())
                     .build();
             likeRecordRepository.save(record);
             comment.setLikeCount(comment.getLikeCount() + 1);

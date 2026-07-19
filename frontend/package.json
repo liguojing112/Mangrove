@@ -15,7 +15,8 @@
     "lucide-vue-next": "^0.344.0",
     "swiper": "^14.0.1",
     "vue": "^3.4.21",
-    "vue-router": "^4.3.0"
+    "vue-router": "^4.3.0",
+    "vue3-aplayer": "^1.7.3"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",

@@ -21,7 +21,13 @@ const routes = [
     path: '/videos',
     name: 'Videos',
     component: () => import('@/views/VideosPage.vue'),
-    meta: { title: '影像存档', icon: 'video' }
+    meta: { title: '短视频', icon: 'video' }
+  },
+  {
+    path: '/long-videos',
+    name: 'LongVideos',
+    component: () => import('@/views/LongVideosPage.vue'),
+    meta: { title: '长视频', icon: 'clapperboard' }
   },
   {
     path: '/music',
@@ -30,10 +36,22 @@ const routes = [
     meta: { title: '音芒分享', icon: 'music' }
   },
   {
+    path: '/music/albums/:id',
+    name: 'MusicAlbum',
+    component: () => import('@/views/MusicAlbumPage.vue'),
+    meta: { title: '照片专辑', hidden: true }
+  },
+  {
     path: '/merchandise',
     name: 'Merchandise',
     component: () => import('@/views/MerchandisePage.vue'),
     meta: { title: '芒园周边', icon: 'gift' }
+  },
+  {
+    path: '/merchandise/producer/:publicId',
+    name: 'MerchandiseProducer',
+    component: () => import('@/views/MerchandiseProducerPage.vue'),
+    meta: { title: '周边套装作品', hidden: true }
   },
   {
     path: '/works',
@@ -63,7 +81,13 @@ const routes = [
     path: '/tree',
     name: 'Tree',
     component: () => import('@/views/MyTreePage.vue'),
-    meta: { title: '我的芒果树', icon: 'tree-pine' }
+    meta: { title: '芒果树', icon: 'tree-pine' }
+  },
+  {
+    path: '/tree/my',
+    name: 'MyTree',
+    component: () => import('@/views/MyLittleTreePage.vue'),
+    meta: { title: '我的小树', icon: 'tree-pine' }
   },
   {
     path: '/profile',
@@ -82,17 +106,24 @@ const routes = [
     path: '/admin',
     component: () => import('@/views/admin/AdminLayout.vue'),
     meta: { requiresAuth: true, roles: ['ADMIN', 'SUPER_ADMIN'] },
+    redirect: '/admin/dashboard',
     children: [
       {
-        path: '',
+        path: 'dashboard',
         name: 'AdminDashboard',
         component: () => import('@/views/admin/DashboardPage.vue'),
         meta: { title: '仪表盘' },
       },
       {
+        path: 'homepage',
+        name: 'AdminHomepage',
+        component: () => import('@/views/admin/AdminHomepagePage.vue'),
+        meta: { title: '首页管理' },
+      },
+      {
         path: 'artists',
         name: 'AdminArtists',
-        component: () => import('@/views/admin/GenericAdminPage.vue'),
+        component: () => import('@/views/admin/AdminArtistPage.vue'),
         meta: { title: '艺人管理' },
       },
       {
@@ -128,32 +159,50 @@ const routes = [
       {
         path: 'merchandise',
         name: 'AdminMerchandise',
-        component: () => import('@/views/admin/GenericAdminPage.vue'),
+        component: () => import('@/views/admin/AdminMerchandisePage.vue'),
         meta: { title: '周边管理' },
       },
       {
         path: 'works',
         name: 'AdminWorks',
-        component: () => import('@/views/admin/GenericAdminPage.vue'),
+        component: () => import('@/views/admin/AdminWorksPage.vue'),
         meta: { title: '作品管理' },
+      },
+      {
+        path: 'work-sections',
+        name: 'AdminWorkSections',
+        component: () => import('@/views/admin/AdminWorkSectionPage.vue'),
+        meta: { title: '创作页面管理' },
       },
       {
         path: 'schedules',
         name: 'AdminSchedules',
-        component: () => import('@/views/admin/GenericAdminPage.vue'),
+        component: () => import('@/views/admin/AdminSchedulePage.vue'),
         meta: { title: '行程管理' },
       },
       {
         path: 'comments',
         name: 'AdminComments',
-        component: () => import('@/views/admin/GenericAdminPage.vue'),
+        component: () => import('@/views/admin/AdminCommentPage.vue'),
         meta: { title: '评论管理' },
       },
       {
         path: 'users',
         name: 'AdminUsers',
-        component: () => import('@/views/admin/GenericAdminPage.vue'),
+        component: () => import('@/views/admin/AdminUserPage.vue'),
         meta: { title: '用户管理' },
+      },
+      {
+        path: 'game',
+        name: 'AdminGame',
+        component: () => import('@/views/admin/AdminGamePage.vue'),
+        meta: { title: '游戏管理' },
+      },
+      {
+        path: 'letters',
+        name: 'AdminLetters',
+        component: () => import('@/views/admin/AdminLetterPage.vue'),
+        meta: { title: '来信管理' },
       },
       {
         path: 'audit',

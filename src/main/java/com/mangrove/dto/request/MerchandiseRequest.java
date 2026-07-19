@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,10 +24,17 @@ public class MerchandiseRequest {
 
     private String description;
 
-    @NotBlank(message = "高清图URL不能为空")
     private String highResImageUrl;
 
     private String thumbnailUrl;
+
+    private String cardFrontImageUrl;
+
+    private String cardBackImageUrl;
+
+    private String profileImageUrl;
+
+    private List<String> bundleImageUrls;
 
     private String tags;
 

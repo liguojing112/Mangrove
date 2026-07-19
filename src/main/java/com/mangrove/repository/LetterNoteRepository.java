@@ -12,9 +12,16 @@ public interface LetterNoteRepository extends JpaRepository<LetterNote, Long> {
 
     List<LetterNote> findByArtistIdAndStatusOrderByNoteDateDesc(Long artistId, Integer status, Pageable pageable);
 
-    List<LetterNote> findByCategoryAndStatus(LetterNote.Category category, Integer status, Pageable pageable);
+    List<LetterNote> findByCategoryAndStatus(String category, Integer status, Pageable pageable);
 
     List<LetterNote> findByStatus(Integer status, Pageable pageable);
 
     long countByArtistIdAndStatus(Long artistId, Integer status);
+
+    // Simple methods without Pageable
+    List<LetterNote> findByArtistIdAndStatusOrderByNoteDateDesc(Long artistId, Integer status);
+
+    List<LetterNote> findByCategoryAndStatusOrderByNoteDateDesc(String category, Integer status);
+
+    List<LetterNote> findByStatusOrderByNoteDateDesc(Integer status);
 }

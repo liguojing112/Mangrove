@@ -17,4 +17,8 @@ public interface FanWorkRepository extends JpaRepository<FanWork, Long> {
     List<FanWork> findByArtistId(Long artistId, Pageable pageable);
 
     List<FanWork> findByStatus(FanWork.Status status, Pageable pageable);
+
+    long countByCreatorId(Long creatorId);
+
+    long countByStatus(FanWork.Status status);
 }

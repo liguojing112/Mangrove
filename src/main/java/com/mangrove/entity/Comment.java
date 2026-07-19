@@ -34,6 +34,9 @@ public class Comment {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     private Comment parent;
@@ -48,6 +51,6 @@ public class Comment {
     private LocalDateTime createdAt;
 
     public enum TargetType {
-        MUSIC, ALBUM, FAN_WORK, MERCHANDISE
+        MUSIC, ALBUM, FAN_WORK, MERCHANDISE, COMMUNITY
     }
 }

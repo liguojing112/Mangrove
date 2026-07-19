@@ -1,204 +1,248 @@
 <template>
-  <div class="bg-gray-950 min-h-screen">
-    <!-- PAGE HEADER -->
-    <section class="pt-24 pb-8 text-center">
-      <p class="text-amber-400/60 tracking-[0.3em] text-xs mb-2">MANGO COLLECTION</p>
-      <h1 class="text-white text-4xl font-light">芒园周边</h1>
-      <p class="text-gray-500 text-sm mt-2">全站应援物料展示库</p>
-      <div class="w-16 h-px bg-gradient-to-r from-transparent via-amber-400 to-transparent mx-auto mt-4"></div>
+  <div class="min-h-screen bg-gray-950">
+    <section class="pb-8 pt-24 text-center">
+      <p class="mb-2 text-xs tracking-[0.3em] text-amber-400/60">MANGO COLLECTION</p>
+      <h1 class="text-4xl font-light text-white">芒园周边</h1>
+      <p class="mt-2 text-sm text-gray-500">全站应援物料展示库</p>
+      <div class="mx-auto mt-4 h-px w-16 bg-gradient-to-r from-transparent via-amber-400 to-transparent"></div>
     </section>
 
-    <!-- STICKY NAV -->
-    <div class="sticky top-16 z-40 bg-gray-950/80 backdrop-blur-md border-b border-gray-800/50">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex gap-2 justify-center flex-wrap">
-        <button v-for="s in sectionNav" :key="s.id"
-          class="px-4 py-1.5 rounded-full text-xs font-medium text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 border border-gray-800 hover:border-amber-500/30 transition-all"
-          @click="scrollTo(s.id)">{{ s.label }}</button>
+    <div class="sticky top-16 z-40 border-b border-gray-800/50 bg-gray-950/80 backdrop-blur-md">
+      <div class="mx-auto flex max-w-7xl flex-wrap justify-center gap-2 px-4 py-3 sm:px-6 lg:px-8">
+        <button v-for="section in sectionNav" :key="section.id" class="rounded-full border border-gray-800 px-4 py-1.5 text-xs font-medium text-gray-400 transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400" @click="scrollTo(section.id)">{{ section.label }}</button>
       </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20">
-
-      <!-- ========== 1. 小卡合集 ========== -->
-      <section id="s1" class="space-y-6 scroll-mt-28">
-        <div><h2 class="text-2xl font-light text-white">小卡合集</h2><p class="text-gray-500 text-sm mt-1">官方卡 · 饭制卡 · 随机卡 · 高清扫图</p></div>
-        <!-- Hero -->
-        <div class="relative rounded-2xl overflow-hidden border border-gray-800 bg-gradient-to-br from-gray-800 to-gray-900">
-          <div class="aspect-[21/9] flex items-center justify-center relative">
-            <div class="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-mangrove-500/10"></div>
-            <span class="text-amber-400/30 text-6xl">🃏</span>
-            <div class="absolute top-4 right-4 bg-amber-500 text-gray-900 px-3 py-1 rounded-full text-xs font-bold">本月推荐</div>
-          </div>
-          <div class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80">
-            <div class="flex items-center gap-3">
-              <h3 class="text-white text-xl font-light">林夏五月限定小卡</h3>
-              <span class="bg-gradient-to-r from-amber-400 to-yellow-300 text-gray-900 px-2 py-0.5 rounded text-xs font-bold">LEGENDARY</span>
+    <div class="mx-auto max-w-7xl space-y-20 px-4 py-12 sm:px-6 lg:px-8">
+      <section id="s1" class="scroll-mt-28 space-y-6">
+        <header><h2 class="text-2xl font-light text-white">小卡合集</h2><p class="mt-1 text-sm text-gray-500">官方卡 · 饭制卡 · 随机卡 · 高清扫图</p></header>
+        <div class="flex flex-wrap gap-2"><button v-for="filter in cardFilters" :key="filter" class="rounded-full border px-3 py-1 text-xs font-medium transition-all" :class="cardFilter === filter ? 'border-amber-500/30 bg-amber-500/20 text-amber-400' : 'border-gray-800 text-gray-500 hover:text-gray-300'" @click="cardFilter = filter">{{ filter }}</button></div>
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+          <button v-for="item in filteredCards" :key="item.id || item.name" type="button" class="group text-left" :aria-label="`查看小卡：${item.name}`" @click="openDouble(item, '卡面', '卡背')">
+            <div class="relative aspect-[2/3] overflow-hidden rounded-xl border border-gray-800 bg-gradient-to-br from-gray-800 to-gray-900 transition-all hover:border-amber-500/30">
+              <img v-if="item.frontImageUrl" :src="item.frontImageUrl" :alt="item.name" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+              <div v-else class="absolute inset-0 flex items-center justify-center text-2xl text-gray-700"><ImageIcon /></div>
+              <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 p-3"><p class="truncate text-xs font-medium text-white">{{ item.name }}</p><div class="mt-1 flex items-center gap-2"><span :class="[rarityClass(item.rarity), 'rounded px-1.5 py-0.5 text-[10px]']">{{ item.rarity }}</span><span class="truncate text-[10px] text-gray-500">产出：{{ item.producerName }}</span></div></div>
             </div>
-            <p class="text-gray-400 text-sm mt-1">五月花期系列</p>
-          </div>
+          </button>
         </div>
-        <!-- Sub filters -->
-        <div class="flex gap-2 flex-wrap">
-          <button v-for="f in cardFilters" :key="f"
-            class="px-3 py-1 rounded-full text-xs font-medium transition-all"
-            :class="cardFilter===f ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'text-gray-500 hover:text-gray-300 border border-gray-800'"
-            @click="cardFilter=f">{{ f }}</button>
+      </section>
+
+      <section id="s2" class="scroll-mt-28 space-y-6">
+        <header><h2 class="text-2xl font-light text-white">纸质周边</h2><p class="mt-1 text-sm text-gray-500">手幅 · 明信片 · 书签 · 贴纸 · 台历 · 海报</p></header>
+        <div class="columns-2 gap-3 lg:columns-4" aria-label="纸质周边列表">
+          <button v-for="item in paperItems" :key="item.id || item.name" type="button" class="group mb-3 block w-full break-inside-avoid text-left" @click="openDouble(item, '正面', '背面')">
+            <div class="relative overflow-hidden rounded-xl border border-gray-800 bg-gradient-to-br from-gray-800 to-gray-900 transition-all hover:border-amber-500/30">
+              <img v-if="item.frontImageUrl" :src="item.frontImageUrl" :alt="`${item.name}正面`" class="block h-auto w-full transition-transform duration-300 group-hover:scale-105" />
+              <div v-else class="flex aspect-[4/3] items-center justify-center text-gray-700"><ImageIcon /></div>
+              <span class="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium text-gray-800">{{ item.type }}</span>
+              <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 p-3"><p class="truncate text-xs font-medium text-white">{{ item.name }}</p><p class="mt-1 truncate text-[10px] text-white/60">产出：{{ item.producerName }}</p></div>
+            </div>
+          </button>
         </div>
-        <!-- Grid -->
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          <div v-for="c in filteredCards" :key="c.name" class="group cursor-pointer">
-            <div class="aspect-[2/3] rounded-xl overflow-hidden border border-gray-800 hover:border-amber-500/30 transition-all bg-gradient-to-br from-gray-800 to-gray-900 relative">
-              <div class="absolute inset-0 flex items-center justify-center"><span class="text-2xl opacity-20">🃏</span></div>
-              <div class="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80">
-                <p class="text-white text-xs font-medium truncate">{{ c.name }}</p>
-                <div class="flex items-center gap-2 mt-1">
-                  <span :class="[rarityCls(c.rarity), 'px-1.5 py-0.5 rounded text-[10px]']">{{ c.rarity }}</span>
-                  <span class="text-gray-500 text-[10px]">{{ c.series }}</span>
-                </div>
+      </section>
+
+      <section id="s3" class="scroll-mt-28 space-y-6">
+        <header><h2 class="text-2xl font-light text-white">实物应援</h2><p class="mt-1 text-sm text-gray-500">徽章 · 立牌 · 钥匙扣 · 透卡 · 收纳周边</p></header>
+        <div class="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
+          <button v-for="item in physicalItems" :key="item.id || item.name" type="button" class="group text-left" @click="selectedSingle = item">
+            <div class="rounded-xl border border-gray-800 bg-gray-900 p-4 transition-all hover:border-amber-500/30">
+              <div class="relative mb-3 aspect-square overflow-hidden rounded-lg bg-gray-800"><img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><div v-else class="flex h-full items-center justify-center text-gray-700"><ImageIcon /></div></div>
+              <p class="truncate text-sm font-medium text-white">{{ item.name }}</p><div class="mt-1.5 flex items-center justify-between gap-2"><span class="inline-block rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-400">{{ item.type }}</span><span class="truncate text-[10px] text-gray-500">产出：{{ item.producerName }}</span></div>
+            </div>
+          </button>
+        </div>
+      </section>
+
+      <section id="s4" class="scroll-mt-28 space-y-6">
+        <header><h2 class="text-2xl font-light text-white">电子周边</h2><p class="mt-1 text-sm text-gray-500">壁纸 · 头像 · 锁屏 · 模板 · 表情包 · 可保存素材</p></header>
+        <div class="flex flex-wrap gap-2"><button v-for="filter in digitalFilters" :key="filter" class="rounded-full border px-3 py-1 text-xs transition-all" :class="digitalFilter === filter ? 'border-amber-500/30 bg-amber-500/20 text-amber-400' : 'border-gray-800 text-gray-500 hover:text-gray-300'" @click="digitalFilter = filter">{{ filter }}</button></div>
+        <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <button v-for="item in filteredDigitalItems" :key="item.id || item.name" type="button" class="group text-left" @click="selectedSingle = item">
+            <div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900 p-1 transition-all hover:border-amber-500/30">
+              <div class="relative aspect-[4/5] overflow-hidden rounded-lg bg-gray-800"><img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><div v-else class="flex h-full items-center justify-center text-gray-700"><ImageIcon /></div><span class="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[10px] text-white">{{ item.type }}</span></div>
+              <div class="px-2 py-2 text-center"><p class="truncate text-xs text-gray-400">{{ item.name }}</p><p class="mt-1 truncate text-[10px] text-gray-600">产出：{{ item.producerName }}</p></div>
+            </div>
+          </button>
+        </div>
+      </section>
+
+      <section id="s5" class="scroll-mt-28 space-y-6">
+        <header><h2 class="text-2xl font-light text-white">往期应援存档</h2><p class="mt-1 text-sm text-gray-500">生日应援 · 回归应援 · 线下活动 · 周年纪念</p></header>
+        <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <button v-for="item in archiveItems" :key="item.id || item.name" type="button" class="group overflow-hidden rounded-xl border border-gray-800 bg-gray-900 text-left transition-all hover:border-amber-500/30" @click="selectedSingle = item">
+            <div class="relative aspect-video bg-gray-800"><img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><div v-else class="flex h-full items-center justify-center text-gray-700"><ImageIcon /></div></div>
+            <div class="p-4"><p class="text-xs text-amber-400">{{ item.date || item.type }}</p><h3 class="mt-1 truncate text-base font-medium text-white">{{ item.name }}</h3><p class="mt-1 text-[10px] text-gray-600">产出：{{ item.producerName }}</p><p v-if="item.description" class="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">{{ item.description }}</p></div>
+          </button>
+        </div>
+      </section>
+
+      <section id="s6" class="scroll-mt-28 space-y-8">
+        <header class="flex flex-wrap items-end justify-between gap-4"><div><h2 class="text-2xl font-light text-white">产出周边套装</h2><p class="mt-1 text-sm text-gray-500">周边套装</p></div><router-link v-if="isLoggedIn" to="/profile?tab=merchandise&type=BUNDLE" class="rounded-lg border border-amber-500/30 px-4 py-2 text-xs font-medium text-amber-400 transition-colors hover:bg-amber-500/10">上传套装</router-link></header>
+        <div v-if="bundleCreators.length" class="grid grid-cols-3 gap-x-4 gap-y-8 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+          <router-link v-for="creator in bundleCreators" :key="creator.publicId" :to="`/merchandise/producer/${creator.publicId}`" class="group min-w-0 text-center">
+            <div class="mx-auto flex aspect-square w-full max-w-24 items-center justify-center rounded-full border text-lg font-semibold transition-transform duration-200 group-hover:-translate-y-1" :style="avatarStyle(creator.publicId)">{{ avatarText(creator.username) }}</div>
+            <p class="mt-3 truncate text-sm font-medium text-white">{{ creator.username }}</p>
+            <p class="mt-1 truncate font-mono text-[10px] text-gray-600">{{ creator.publicId }}</p>
+            <p class="mt-1 text-[10px] text-gray-500">{{ creator.bundleCount }} 套作品</p>
+          </router-link>
+        </div>
+        <div v-else class="border-y border-gray-800 py-16 text-center text-sm text-gray-600"><p>暂无套装产出</p><router-link v-if="isLoggedIn" to="/profile?tab=merchandise&type=BUNDLE" class="mt-4 inline-block text-amber-400 hover:text-amber-300">成为第一位产出者</router-link><router-link v-else to="/login" class="mt-4 inline-block text-amber-400 hover:text-amber-300">登录后上传套装</router-link></div>
+      </section>
+
+      <section id="s7" class="scroll-mt-28 space-y-6">
+        <header><h2 class="text-2xl font-light text-white">抽奖活动</h2><p class="mt-1 text-sm text-gray-500">参与抽奖，赢取小卡和周边</p></header>
+        <div v-if="lotteries.length" class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <div v-for="lottery in lotteries" :key="lottery.id" class="rounded-xl border border-gray-800 bg-gray-900 p-5 transition-all hover:border-amber-500/30">
+            <div class="flex items-start justify-between mb-3">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-medium" :class="lotteryStatusClass(lottery.status)">{{ lotteryStatusLabel(lottery.status) }}</span>
+              <span class="text-[10px] text-gray-600">{{ lottery.entryCount }} 人参与</span>
+            </div>
+            <h3 class="text-base font-medium text-white mb-1">{{ lottery.title }}</h3>
+            <p v-if="lottery.description" class="text-xs text-gray-500 line-clamp-2 mb-3">{{ lottery.description }}</p>
+            <div class="space-y-1.5 mb-4">
+              <div class="flex items-center gap-2 text-xs text-gray-400">
+                <Gift class="w-3.5 h-3.5 text-amber-400/70" />
+                <span>奖品：{{ lottery.prizeDescription }}</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-gray-500">
+                <Clock class="w-3.5 h-3.5" />
+                <span>{{ formatLotteryTime(lottery.startTime) }} ~ {{ formatLotteryTime(lottery.endTime) }}</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-gray-500">
+                <Users class="w-3.5 h-3.5" />
+                <span>{{ eligibleLabel(lottery.eligibleRole) }} · {{ lottery.winnerCount }} 个中奖名额</span>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ========== 2. 纸质周边 ========== -->
-      <section id="s2" class="space-y-6 scroll-mt-28">
-        <div><h2 class="text-2xl font-light text-white">纸质周边</h2><p class="text-gray-500 text-sm mt-1">手幅 · 明信片 · 书签 · 贴纸 · 台历 · 海报</p></div>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          <div v-for="p in paperItems" :key="p.name" class="group cursor-pointer">
-            <div :class="['rounded-xl overflow-hidden border border-gray-800 hover:border-amber-500/30 transition-all bg-gradient-to-br from-gray-800 to-gray-900 relative', p.ratio]">
-              <span :class="['absolute top-3 left-3 px-2 py-0.5 rounded-full text-[10px] font-medium z-10', p.color]">{{ p.type }}</span>
-              <div class="absolute inset-0 flex items-center justify-center"><span class="text-xl opacity-15">{{ p.icon }}</span></div>
-              <div class="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60"><p class="text-white text-xs font-medium truncate">{{ p.name }}</p></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ========== 3. 实物应援 ========== -->
-      <section id="s3" class="space-y-6 scroll-mt-28">
-        <div><h2 class="text-2xl font-light text-white">实物应援</h2><p class="text-gray-500 text-sm mt-1">徽章 · 立牌 · 钥匙扣 · 透卡 · 收纳周边</p></div>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-          <div v-for="p in physicalItems" :key="p.name" class="group cursor-pointer">
-            <div class="rounded-2xl bg-gray-900 p-4 border border-gray-800 hover:border-amber-500/30 transition-all duration-300 hover:rotate-1">
-              <div class="bg-gradient-to-br from-mangrove-900/30 to-gray-800 rounded-xl aspect-square mb-3 flex items-center justify-center"><span class="text-3xl opacity-30">{{ p.icon }}</span></div>
-              <p class="font-medium text-sm text-white truncate">{{ p.name }}</p>
-              <div class="flex items-center gap-2 mt-1.5">
-                <span :class="['px-2 py-0.5 rounded-full text-[10px] font-medium', p.badge]">{{ p.type }}</span>
-                <span class="text-xs text-gray-500">{{ p.material }}</span>
+            <!-- Winners display -->
+            <div v-if="lottery.status === 'DRAWN' && lottery.winnerNicknames?.length" class="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-3">
+              <p class="text-xs text-amber-400 font-medium mb-1.5">恭喜中奖者</p>
+              <div class="flex flex-wrap gap-1.5">
+                <span v-for="(name, i) in lottery.winnerNicknames" :key="i" class="px-2 py-0.5 rounded-full bg-amber-500/20 text-[11px] text-amber-300">{{ name }}</span>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ========== 4. 电子周边 ========== -->
-      <section id="s4" class="space-y-6 scroll-mt-28">
-        <div><h2 class="text-2xl font-light text-white">电子周边</h2><p class="text-gray-500 text-sm mt-1">壁纸 · 头像 · 锁屏 · 模板 · 可保存素材</p></div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div v-for="d in digitalItems" :key="d.name" class="group cursor-pointer">
-            <div class="rounded-2xl border-2 border-gray-700 bg-gray-800 p-1">
-              <div class="aspect-[9/19] bg-gradient-to-b from-mangrove-400/20 to-mangrove-900/40 rounded-xl relative overflow-hidden flex items-center justify-center">
-                <span class="text-2xl opacity-20">📱</span>
-                <div class="absolute bottom-3 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span class="bg-amber-500/90 text-gray-900 px-3 py-1.5 rounded-full text-xs font-medium">💾 保存</span>
-                </div>
-              </div>
-              <p class="text-xs text-center text-gray-400 mt-2">{{ d.name }}</p>
+            <!-- Action button -->
+            <div v-if="isLoggedIn">
+              <div v-if="lottery.status === 'DRAWN'" class="text-xs text-gray-500 text-center py-2">已开奖</div>
+              <div v-else-if="lottery.userEntered" class="text-xs text-green-400 text-center py-2">✓ 已参与</div>
+              <button v-else-if="lottery.status === 'ACTIVE'" class="w-full rounded-lg bg-amber-500/20 border border-amber-500/30 py-2 text-xs font-medium text-amber-400 transition-colors hover:bg-amber-500/30" @click="enterLottery(lottery)">参与抽奖</button>
+              <div v-else-if="lottery.status === 'PENDING'" class="text-xs text-gray-500 text-center py-2">尚未开始</div>
+              <div v-else-if="lottery.status === 'ENDED'" class="text-xs text-gray-500 text-center py-2">等待开奖</div>
             </div>
+            <router-link v-else to="/login" class="block w-full rounded-lg border border-gray-700 py-2 text-center text-xs text-gray-500 transition-colors hover:border-gray-600 hover:text-gray-400">登录后参与</router-link>
           </div>
         </div>
+        <div v-else class="border-y border-gray-800 py-16 text-center text-sm text-gray-600">暂无抽奖活动</div>
       </section>
+    </div>
 
-      <!-- ========== 5. 往期应援存档 ========== -->
-      <section id="s5" class="space-y-6 scroll-mt-28">
-        <div><h2 class="text-2xl font-light text-white">往期应援存档</h2><p class="text-gray-500 text-sm mt-1">生日应援 · 回归应援 · 线下活动全套物料</p></div>
-        <div class="border-l-2 border-amber-500/30 pl-8 space-y-10">
-          <div v-for="a in archiveItems" :key="a.date" class="relative">
-            <div class="absolute left-0 top-1 w-3 h-3 rounded-full bg-amber-500 -translate-x-[calc(50%+1px)] ring-4 ring-gray-950"></div>
-            <p class="text-amber-400 text-sm font-medium">{{ a.date }}</p>
-            <h3 class="text-white text-lg font-semibold mt-1">{{ a.title }}</h3>
-            <p class="text-gray-400 text-sm mt-1">{{ a.desc }}</p>
-            <div class="grid grid-cols-3 gap-2 mt-3">
-              <div v-for="n in 6" :key="n" class="aspect-square bg-gray-800 rounded-lg flex items-center justify-center"><span class="text-lg opacity-15">📸</span></div>
-            </div>
-          </div>
+    <div v-if="selectedDouble" class="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm" @click.self="selectedDouble = null">
+      <div class="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-gray-800 bg-gray-950 p-5 shadow-2xl sm:p-7">
+        <div class="mb-5 flex items-start justify-between"><div><p class="text-xs text-amber-400">{{ selectedDouble.type }}</p><h2 class="mt-1 text-xl font-light text-white">{{ selectedDouble.name }}</h2></div><button type="button" class="p-2 text-gray-500 hover:text-white" aria-label="关闭详情" @click="selectedDouble = null"><X class="h-5 w-5" /></button></div>
+        <div class="grid grid-cols-2 gap-3 sm:gap-6">
+          <section><p class="mb-2 text-center text-xs text-gray-500">{{ selectedDouble.frontLabel }}</p><div class="aspect-[2/3] overflow-hidden rounded-xl border border-gray-800 bg-gray-900"><img v-if="selectedDouble.frontImageUrl" :src="selectedDouble.frontImageUrl" :alt="`${selectedDouble.name}${selectedDouble.frontLabel}`" class="h-full w-full object-contain" /><div v-else class="flex h-full items-center justify-center text-xs text-gray-600">暂未上传</div></div></section>
+          <section><p class="mb-2 text-center text-xs text-gray-500">{{ selectedDouble.backLabel }}</p><div class="aspect-[2/3] overflow-hidden rounded-xl border border-gray-800 bg-gray-900"><img v-if="selectedDouble.backImageUrl" :src="selectedDouble.backImageUrl" :alt="`${selectedDouble.name}${selectedDouble.backLabel}`" class="h-full w-full object-contain" /><div v-else class="flex h-full items-center justify-center text-xs text-gray-600">暂未上传</div></div></section>
         </div>
-      </section>
+        <p v-if="selectedDouble.description" class="mt-5 text-sm leading-6 text-gray-500">{{ selectedDouble.description }}</p>
+      </div>
+    </div>
 
+    <div v-if="selectedSingle" class="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm" @click.self="selectedSingle = null">
+      <div class="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-gray-800 bg-gray-950 p-5 shadow-2xl">
+        <div class="mb-4 flex items-start justify-between"><div><p class="text-xs text-amber-400">{{ selectedSingle.type }}</p><h2 class="mt-1 text-xl font-light text-white">{{ selectedSingle.name }}</h2></div><button type="button" class="p-2 text-gray-500 hover:text-white" aria-label="关闭详情" @click="selectedSingle = null"><X class="h-5 w-5" /></button></div>
+        <img v-if="selectedSingle.imageUrl" :src="selectedSingle.imageUrl" :alt="selectedSingle.name" class="max-h-[68vh] w-full rounded-lg bg-gray-900 object-contain" />
+        <p v-if="selectedSingle.description" class="mt-4 text-sm leading-6 text-gray-500">{{ selectedSingle.description }}</p>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { Clock, Gift, ImageIcon, Users, X } from 'lucide-vue-next'
 
-const sectionNav = [
-  { id: 's1', label: '小卡合集' }, { id: 's2', label: '纸质周边' },
-  { id: 's3', label: '实物应援' }, { id: 's4', label: '电子周边' },
-  { id: 's5', label: '往期存档' }
-]
-function scrollTo(id) { document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }) }
-
-// --- Section 1 ---
+const sectionNav = [{ id: 's1', label: '小卡合集' }, { id: 's2', label: '纸质周边' }, { id: 's3', label: '实物应援' }, { id: 's4', label: '电子周边' }, { id: 's5', label: '往期存档' }, { id: 's6', label: '周边套装' }, { id: 's7', label: '抽奖活动' }]
+const merchandise = ref([])
+const isLoggedIn = !!localStorage.getItem('mangrove_token')
 const cardFilter = ref('全部')
-const cardFilters = ['全部', '官方卡', '饭制卡', '随机卡', '全套图鉴']
-const allCards = [
-  { name: '林夏限定小卡', rarity: 'LEGENDARY', series: '五月花期', type: '官方卡' },
-  { name: '苏念亲签照', rarity: 'LIMITED', series: '星河系列', type: '官方卡' },
-  { name: '陈予随机小卡', rarity: 'RARE', series: '第三辑', type: '随机卡' },
-  { name: '林夏生日限定卡', rarity: 'LEGENDARY', series: '生日系列', type: '官方卡' },
-  { name: '全员合照小卡', rarity: 'LIMITED', series: '周年纪念', type: '官方卡' },
-  { name: '隐藏款闪卡', rarity: 'LEGENDARY', series: '绿野篇', type: '随机卡' },
-  { name: '官方出道小卡', rarity: 'COMMON', series: '出道纪念', type: '官方卡' },
-  { name: '饭制手绘卡', rarity: 'RARE', series: '同人创作', type: '饭制卡' },
-  { name: '随机闪卡包', rarity: 'RARE', series: '星光系列', type: '随机卡' },
-  { name: '五周年纪念卡', rarity: 'LIMITED', series: '周年纪念', type: '全套图鉴' }
-]
-const filteredCards = ref(cardFilter.value === '全部' ? allCards : allCards.filter(c => c.type === cardFilter.value))
-import { computed } from 'vue'
-const filteredCards2 = computed(() => cardFilter.value === '全部' ? allCards : allCards.filter(c => c.type === cardFilter.value))
-
-// --- Section 2 ---
-const paperItems = [
-  { name: '绿野演唱会手幅', type: '手幅', ratio: 'aspect-[5/2]', color: 'bg-rose-100 text-rose-800', icon: '🎀' },
-  { name: '周年纪念明信片', type: '明信片', ratio: 'aspect-[4/3]', color: 'bg-sky-100 text-sky-800', icon: '💌' },
-  { name: '角色书签套装', type: '书签', ratio: 'aspect-[1/2]', color: 'bg-emerald-100 text-emerald-800', icon: '🔖' },
-  { name: '主题贴纸包', type: '贴纸', ratio: 'aspect-square', color: 'bg-violet-100 text-violet-800', icon: '✨' },
-  { name: '新年台历', type: '台历', ratio: 'aspect-[3/4]', color: 'bg-amber-100 text-amber-800', icon: '📅' },
-  { name: '绿野巡回海报', type: '海报', ratio: 'aspect-[2/3]', color: 'bg-cyan-100 text-cyan-800', icon: '🖼️' },
-  { name: '应援手幅·星辰', type: '手幅', ratio: 'aspect-[5/2]', color: 'bg-rose-100 text-rose-800', icon: '🎀' },
-  { name: '限定明信片', type: '明信片', ratio: 'aspect-[4/3]', color: 'bg-sky-100 text-sky-800', icon: '💌' }
-]
-
-// --- Section 3 ---
-const physicalItems = [
-  { name: '金属徽章套装', type: '徽章', material: '金属', icon: '🎖️', badge: 'bg-red-100 text-red-800' },
-  { name: '亚克力立牌', type: '立牌', material: '亚克力', icon: '🧸', badge: 'bg-blue-100 text-blue-800' },
-  { name: '珐琅钥匙扣', type: '钥匙扣', material: '金属', icon: '🔑', badge: 'bg-purple-100 text-purple-800' },
-  { name: '透明卡套', type: '透卡', material: 'PVC', icon: '💳', badge: 'bg-pink-100 text-pink-800' },
-  { name: '主题收纳包', type: '收纳', material: '帆布', icon: '👜', badge: 'bg-emerald-100 text-emerald-800' },
-  { name: '限定徽章礼盒', type: '徽章', material: '金属', icon: '🎁', badge: 'bg-red-100 text-red-800' },
-  { name: '钥匙扣套装', type: '钥匙扣', material: '金属', icon: '🗝️', badge: 'bg-purple-100 text-purple-800' },
-  { name: '帆布包·青芒绿', type: '收纳', material: '帆布', icon: '🎒', badge: 'bg-emerald-100 text-emerald-800' }
-]
-
-// --- Section 4 ---
-const digitalItems = [
-  { name: '绿野主题壁纸' }, { name: '星辰动态壁纸' }, { name: '林夏头像框' }, { name: '苏念头像框' },
-  { name: '花雨锁屏' }, { name: '绿野锁屏' }, { name: '应援模板' }, { name: '社交头图模板' }
-]
-
-// --- Section 5 ---
-const archiveItems = [
-  { date: '2026年3月', title: '🎂 林夏生日应援', desc: '全网联动的生日应援企划，包含限定小卡、生日海报、应援灯牌全套物料。' },
-  { date: '2025年10月', title: '🔥 绿野回归应援', desc: '新专辑回归应援活动，机场应援+回归直播+线下快闪全套物料。' },
-  { date: '2024年7月', title: '🎪 线下见面会', desc: '粉丝见面会应援，入场手幅+纪念票根+见面会专属贴纸。' },
-  { date: '2023年12月', title: '⭐ 出道五周年', desc: '出道五周年庆典应援，限量纪念徽章+五周年特别画册+全员签名海报。' }
-]
-
-function rarityCls(r) {
-  const m = { COMMON: 'bg-gray-700/60 text-gray-300', RARE: 'bg-amber-500/20 text-amber-400', LIMITED: 'bg-purple-500/20 text-purple-400', LEGENDARY: 'bg-gradient-to-r from-amber-400 to-yellow-300 text-gray-900 font-bold' }
-  return m[r] || m.COMMON
+const digitalFilter = ref('全部')
+const selectedDouble = ref(null)
+const selectedSingle = ref(null)
+const placeholders = {
+  PHOTOCARD: [{ name: '林夏限定小卡', rarity: 'LEGENDARY', series: '五月花期', type: '官方卡' }],
+  HAND_BANNER: [{ name: '绿野演唱会手幅', type: '手幅' }, { name: '周年纪念明信片', type: '明信片' }, { name: '角色书签套装', type: '书签' }, { name: '主题贴纸包', type: '贴纸' }],
+  PHYSICAL: [{ name: '金属徽章套装', type: '徽章' }, { name: '亚克力立牌', type: '立牌' }, { name: '钥匙扣套装', type: '钥匙扣' }, { name: '透明卡套', type: '透卡' }],
+  DIGITAL: [{ name: '绿野主题壁纸', type: '壁纸' }, { name: '小芒头像组', type: '头像' }, { name: '花雨锁屏', type: '锁屏' }, { name: '聊天表情包', type: '表情包' }],
+  ARCHIVE: [{ name: '小芒生日应援', type: '生日应援', date: '2026年5月', description: '生日应援活动物料存档。' }],
 }
+
+function scrollTo(id) { document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }) }
+function byCategory(category) { const result = merchandise.value.filter(item => item.category === category); return result.length ? result : placeholders[category] }
+function normalize(item) { return { id: item.id, name: item.name, type: item.subCategory || '', rarity: item.rarity || 'COMMON', series: item.tags || item.subCategory || '', description: item.description || '', date: item.publishDate || '', frontImageUrl: item.cardFrontImageUrl || item.thumbnailUrl || item.highResImageUrl || '', backImageUrl: item.cardBackImageUrl || '', imageUrl: item.highResImageUrl || item.thumbnailUrl || item.cardFrontImageUrl || '', bundleImageUrls: item.bundleImageUrls || [], producerName: item.producerName || '站点', producerUsername: item.producerUsername || item.producerName || '站点', producerPublicId: item.producerPublicId || `SITE-${item.producerId || 0}`, producerRole: item.producerRole || '', category: item.category } }
+const cards = computed(() => byCategory('PHOTOCARD').map(normalize))
+const paperItems = computed(() => byCategory('HAND_BANNER').map(normalize))
+const physicalItems = computed(() => byCategory('PHYSICAL').map(normalize))
+const digitalItems = computed(() => byCategory('DIGITAL').map(normalize))
+const archiveItems = computed(() => byCategory('ARCHIVE').map(normalize))
+const bundleItems = computed(() => merchandise.value.filter(item => item.category === 'BUNDLE').map(normalize))
+const bundleCreators = computed(() => {
+  const creators = new Map()
+  bundleItems.value.forEach(bundle => {
+    const key = bundle.producerPublicId
+    if (!creators.has(key)) creators.set(key, { publicId: key, username: bundle.producerUsername, name: bundle.producerName, bundleCount: 0 })
+    creators.get(key).bundleCount += 1
+  })
+  return [...creators.values()]
+})
+const cardFilters = computed(() => ['全部', ...new Set(cards.value.map(item => item.type).filter(Boolean))])
+const filteredCards = computed(() => cardFilter.value === '全部' ? cards.value : cards.value.filter(item => item.type === cardFilter.value))
+const digitalFilters = computed(() => ['全部', '壁纸', '头像', '锁屏', '模板', '表情包', ...new Set(digitalItems.value.map(item => item.type).filter(Boolean))].filter((item, index, array) => array.indexOf(item) === index))
+const filteredDigitalItems = computed(() => digitalFilter.value === '全部' ? digitalItems.value : digitalItems.value.filter(item => item.type === digitalFilter.value))
+
+function openDouble(item, frontLabel, backLabel) { selectedDouble.value = { ...item, frontLabel, backLabel } }
+function avatarText(username) { return (username || 'U').slice(0, 2).toUpperCase() }
+function avatarStyle(publicId) { let hash = 0; for (const char of publicId || '0') hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0; const hue = Math.abs(hash) % 360; return { color: `hsl(${hue} 78% 72%)`, backgroundColor: `hsl(${hue} 55% 18%)`, borderColor: `hsl(${hue} 48% 38%)` } }
+function rarityClass(rarity) { return { COMMON: 'bg-gray-700/60 text-gray-300', RARE: 'bg-amber-500/20 text-amber-400', LIMITED: 'bg-purple-500/20 text-purple-400', LEGENDARY: 'bg-amber-400 text-gray-900 font-bold' }[rarity] || 'bg-gray-700/60 text-gray-300' }
+
+// Lottery
+const lotteries = ref([])
+const token = localStorage.getItem('mangrove_token')
+
+async function fetchLotteries() {
+  try {
+    const res = await fetch('/api/public/lotteries')
+    const json = await res.json()
+    if (json.code === 200 && json.data) {
+      const list = json.data
+      if (token) {
+        for (const l of list) {
+          try {
+            const sr = await fetch(`/api/user/lotteries/${l.id}/status`, { headers: { Authorization: `Bearer ${token}` } })
+            const sj = await sr.json()
+            l.userEntered = sj.data?.entered || false
+          } catch { l.userEntered = false }
+        }
+      }
+      lotteries.value = list
+    }
+  } catch { lotteries.value = [] }
+}
+
+async function enterLottery(lottery) {
+  if (!token) return
+  try {
+    const res = await fetch(`/api/user/lotteries/${lottery.id}/enter`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+    const json = await res.json()
+    if (json.code === 200) { lottery.userEntered = true; lottery.entryCount = (lottery.entryCount || 0) + 1 }
+    else { alert(json.msg || '参与失败') }
+  } catch (e) { alert('参与失败：' + e.message) }
+}
+
+function formatLotteryTime(dt) { if (!dt) return ''; return dt.replace('T', ' ').substring(0, 16) }
+function eligibleLabel(role) { return { ALL: '所有用户可参与', PRODUCER: '仅产出者可参与' }[role] || role }
+function lotteryStatusLabel(s) { return { PENDING: '未开始', ACTIVE: '报名中', ENDED: '已结束', DRAWN: '已开奖' }[s] || s }
+function lotteryStatusClass(s) { return { PENDING: 'bg-gray-700 text-gray-400', ACTIVE: 'bg-green-500/20 text-green-400', ENDED: 'bg-yellow-500/20 text-yellow-400', DRAWN: 'bg-amber-500/20 text-amber-400' }[s] || 'bg-gray-700 text-gray-400' }
+
+async function fetchMerchandise() { try { const response = await fetch('/api/public/merchandise?page=0&size=100'); const json = await response.json(); if (response.ok && json.code === 200) merchandise.value = json.data?.content || [] } catch { merchandise.value = [] } }
+onMounted(() => { fetchMerchandise(); fetchLotteries() })
 </script>

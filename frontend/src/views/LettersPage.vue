@@ -15,14 +15,18 @@
             ? 'bg-mangrove-600 text-white'
             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
         ]"
-        @click="activeTab = tab.value"
+        @click="selectTab(tab.value)"
       >
         {{ tab.label }}
       </button>
     </div>
 
+    <div v-if="loading" class="text-center py-8">
+      <p class="text-gray-400">加载中...</p>
+    </div>
+
     <!-- Timeline -->
-    <div class="relative">
+    <div v-else class="relative">
       <!-- Vertical line -->
       <div class="absolute left-4 top-0 bottom-0 w-px bg-gray-200 hidden sm:block"></div>
 
@@ -47,8 +51,13 @@
           <!-- Date -->
           <div class="flex items-center gap-1 mt-1 text-xs text-gray-400">
             <Clock class="w-3.5 h-3.5" />
-            <span>{{ letter.date }}</span>
+            <span>{{ formatDate(letter.noteDate || letter.createdAt) }}</span>
           </div>
+
+          <!-- Image -->
+          <button v-if="letter.coverUrl" type="button" class="mt-4 block w-full overflow-hidden rounded-lg border border-gray-100 bg-gray-50" :aria-label="`查看图片：${letter.title}`" @click="previewImage = letter">
+            <img :src="letter.coverUrl" :alt="letter.title" class="max-h-[28rem] w-full object-contain transition-transform duration-300 hover:scale-[1.01]" />
+          </button>
 
           <!-- Content -->
           <div class="text-gray-700 mt-3 leading-relaxed whitespace-pre-line text-sm">
@@ -58,10 +67,31 @@
           <!-- Source -->
           <p v-if="letter.source" class="text-sm text-gray-400 italic mt-2">{{ letter.source }}</p>
 
-          <!-- Footer: Like -->
-          <div class="flex items-center gap-1.5 mt-4 text-gray-400 text-sm">
-            <Heart class="w-4 h-4" />
-            <span>{{ letter.likes }}</span>
+          <!-- Footer: Like + Upload -->
+          <div class="flex items-center justify-between mt-4">
+            <div class="flex items-center gap-1.5 text-gray-400 text-sm">
+              <Heart class="w-4 h-4" />
+              <span>{{ letter.likes }}</span>
+            </div>
+            <label v-if="isLoggedIn" class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-mangrove-600 cursor-pointer transition-colors">
+              <Upload class="w-3.5 h-3.5" />
+              上传图片
+              <input type="file" accept="image/*" class="hidden" @change="handleLetterImageUpload($event, letter)" />
+            </label>
+          </div>
+
+          <!-- Uploaded Images Gallery -->
+          <div v-if="letterImages[letter.id]?.length" class="mt-3 grid grid-cols-3 gap-2">
+            <div v-for="img in letterImages[letter.id]" :key="img.id" class="relative group rounded-lg overflow-hidden border border-gray-100">
+              <img :src="img.imageUrl" class="w-full h-24 object-cover cursor-pointer" @click="previewUploadedImage = img.imageUrl" />
+              <button
+                v-if="img.user?.id === currentUser?.id || isAdmin"
+                class="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                @click="deleteLetterImage(letter.id, img.id)"
+              >
+                <X class="w-3 h-3" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -72,131 +102,159 @@
         <p>暂无此类来信</p>
       </div>
     </div>
+
+    <div v-if="previewImage" class="fixed inset-0 z-[130] flex items-center justify-center bg-black/95 p-4" @click="previewImage = null">
+      <button type="button" class="absolute right-4 top-4 p-2 text-white/70 hover:text-white" aria-label="关闭大图" @click="previewImage = null"><X class="h-6 w-6" /></button>
+      <img :src="previewImage.coverUrl" :alt="previewImage.title" class="max-h-[92vh] max-w-[96vw] object-contain" @click.stop />
+    </div>
+
+    <div v-if="previewUploadedImage" class="fixed inset-0 z-[130] flex items-center justify-center bg-black/95 p-4" @click="previewUploadedImage = null">
+      <button type="button" class="absolute right-4 top-4 p-2 text-white/70 hover:text-white" aria-label="关闭大图" @click="previewUploadedImage = null"><X class="h-6 w-6" /></button>
+      <img :src="previewUploadedImage" class="max-h-[92vh] max-w-[96vw] object-contain" @click.stop />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { Clock, Heart, Mail } from 'lucide-vue-next'
+import { computed, ref, onMounted } from 'vue'
+import { Clock, Heart, Mail, Upload, X } from 'lucide-vue-next'
+import { useAuth } from '@/composables/useAuth'
 
-const tabs = [
-  { label: '全部', value: 'ALL' },
-  { label: '语录', value: 'QUOTE' },
-  { label: '来信', value: 'LETTER' },
-  { label: '日记', value: 'DIARY' },
-  { label: '独白', value: 'MONOLOGUE' },
-]
+const { isLoggedIn, getToken, currentUser, isAdmin } = useAuth()
 
+const tabs = ref([{ label: '全部', value: 'ALL' }])
 const activeTab = ref('ALL')
-
-const placeholderLetters = [
-  {
-    id: 1,
-    title: '关于坚持',
-    category: 'QUOTE',
-    date: '2024年3月15日',
-    content: '每一次站在舞台上的瞬间，我都告诉自己：这不是终点，而是另一段旅程的开始。光芒不是别人给的，是你自己一步步走出来的。',
-    source: '—— 摘自《小芒语录》',
-    likes: 328,
-  },
-  {
-    id: 2,
-    title: '写给芒园的你们',
-    category: 'LETTER',
-    date: '2024年2月28日',
-    content: '亲爱的芒园家人们：\n\n春天来了，窗外的芒果树又抽出了新芽。每次看到它们，我都会想起我们一起走过的日子。你们的每一条留言、每一个点赞，都是我继续前行的力量。\n\n谢谢你们一直在。',
-    source: '—— 艺人来信',
-    likes: 512,
-  },
-  {
-    id: 3,
-    title: '深夜随笔',
-    category: 'DIARY',
-    date: '2024年1月10日',
-    content: '今天录了一整天的歌，嗓子有点哑了。但听到混音出来的效果，觉得一切都值得。音乐就是这样——用尽全力之后，才能听见真正的声音。',
-    source: '—— 摘自《小芒日记》',
-    likes: 267,
-  },
-  {
-    id: 4,
-    title: '舞台独白',
-    category: 'MONOLOGUE',
-    date: '2024年4月2日',
-    content: '你知道吗？站在聚光灯下的那一刻，世界会变得很安静。所有的嘈杂、所有的质疑，都退到了幕布后面。剩下的只有我和音乐，和台下那些闪闪发光的眼睛。\n\n我不害怕黑暗，因为我知道，总有人在为我点亮一盏灯。',
-    source: '—— 演出独白',
-    likes: 445,
-  },
-  {
-    id: 5,
-    title: '论创作',
-    category: 'QUOTE',
-    date: '2024年5月20日',
-    content: '好的作品不是写出来的，是活出来的。每一首歌背后都有一段真实的故事，每一个音符都藏着一个未说出口的秘密。',
-    source: '—— 采访语录',
-    likes: 189,
-  },
-  {
-    id: 6,
-    title: '生日那天',
-    category: 'DIARY',
-    date: '2024年6月18日',
-    content: '今天是我的生日。打开手机看到了你们准备的惊喜视频，从世界各地发来的祝福，眼眶一下子就湿了。\n\n二十几岁的自己，还在学着长大，学着变得更好。谢谢你们陪我。',
-    source: '—— 摘自《小芒日记》',
-    likes: 623,
-  },
-  {
-    id: 7,
-    title: '给未来的自己',
-    category: 'LETTER',
-    date: '2024年7月8日',
-    content: '嘿，未来的我：\n\n不管你现在在哪里，经历了什么，请记得当初为什么出发。舞台上那个笑着唱歌的少年，从未走远。',
-    source: '—— 艺人来信',
-    likes: 398,
-  },
-  {
-    id: 8,
-    title: '关于成长',
-    category: 'MONOLOGUE',
-    date: '2024年8月15日',
-    content: '成长是什么？是学会在掌声中保持清醒，也是在寂静中听见自己。是跌倒了不再急着站起来，而是先看看地上有什么值得记住的东西。\n\n我不是完美的，但我一直在努力成为更好的自己。',
-    source: '—— 直播独白',
-    likes: 476,
-  },
-]
-
-const letters = ref(placeholderLetters)
+const letters = ref([])
+const loading = ref(true)
+const previewImage = ref(null)
+const previewUploadedImage = ref(null)
+const letterImages = ref({})
 
 const filteredLetters = computed(() => {
   if (activeTab.value === 'ALL') return letters.value
-  return letters.value.filter(l => l.category === activeTab.value)
+  return letters.value.filter(letter => letter.category === activeTab.value)
 })
 
-function categoryBadgeClass(category) {
-  const map = {
-    QUOTE: 'inline-block text-xs rounded-full px-2 py-0.5 bg-amber-100 text-amber-800 float-right',
-    LETTER: 'inline-block text-xs rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 float-right',
-    DIARY: 'inline-block text-xs rounded-full px-2 py-0.5 bg-purple-100 text-purple-800 float-right',
-    MONOLOGUE: 'inline-block text-xs rounded-full px-2 py-0.5 bg-mangrove-100 text-mangrove-800 float-right',
+async function fetchCategories() {
+  try {
+    const res = await fetch('/api/letter-categories')
+    const json = await res.json()
+    if (json.code === 200 && json.data) {
+      tabs.value = [
+        { label: '全部', value: 'ALL' },
+        ...json.data.map(cat => ({ label: cat.name, value: cat.code }))
+      ]
+    }
+  } catch (e) {
+    console.error('加载分类失败:', e)
   }
-  return map[category] || ''
+}
+
+function selectTab(tab) {
+  activeTab.value = tab
+}
+
+async function fetchLetters() {
+  loading.value = true
+  try {
+    const res = await fetch('/api/letters')
+    const json = await res.json()
+    if (json.code === 200) {
+      // Handle both array and PageResult formats
+      if (Array.isArray(json.data)) {
+        letters.value = json.data
+      } else if (json.data && json.data.content) {
+        letters.value = json.data.content
+      } else {
+        letters.value = []
+      }
+    }
+  } catch (e) {
+    console.error('加载来信失败:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
+
+function categoryBadgeClass(category) {
+  const colors = {
+    QUOTE: 'bg-purple-100 text-purple-700',
+    LETTER: 'bg-blue-100 text-blue-700',
+    DIARY: 'bg-green-100 text-green-700',
+    MONOLOGUE: 'bg-orange-100 text-orange-700',
+  }
+  return `inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[category] || 'bg-gray-100 text-gray-600'}`
 }
 
 function categoryLabel(category) {
-  const map = { QUOTE: '语录', LETTER: '来信', DIARY: '日记', MONOLOGUE: '独白' }
-  return map[category] || category
+  const tab = tabs.value.find(t => t.value === category)
+  return tab ? tab.label : category
+}
+
+async function fetchLetterImages(letterId) {
+  try {
+    const res = await fetch(`/api/letters/${letterId}/images`)
+    const json = await res.json()
+    if (json.code === 200) {
+      letterImages.value[letterId] = json.data || []
+    }
+  } catch {}
+}
+
+async function handleLetterImageUpload(event, letter) {
+  const file = event.target.files?.[0]
+  if (!file) return
+  event.target.value = ''
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const uploadRes = await fetch('/api/files/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${getToken()}` },
+      body: formData
+    })
+    const uploadJson = await uploadRes.json()
+    if (uploadJson.code !== 200) throw new Error(uploadJson.msg || '上传失败')
+
+    await fetch(`/api/letters/${letter.id}/images`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ imageUrl: uploadJson.data.url })
+    })
+    await fetchLetterImages(letter.id)
+  } catch (e) {
+    console.error('上传图片失败:', e)
+  }
+}
+
+async function deleteLetterImage(letterId, imageId) {
+  if (!confirm('确定要删除这张图片吗？')) return
+  try {
+    await fetch(`/api/letters/${letterId}/images/${imageId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${getToken()}` }
+    })
+    await fetchLetterImages(letterId)
+  } catch (e) {
+    console.error('删除图片失败:', e)
+  }
 }
 
 onMounted(async () => {
-  try {
-    const res = await fetch('/api/letters?artistId=1')
-    if (res.ok) {
-      const data = await res.json()
-      if (Array.isArray(data) && data.length > 0) {
-        letters.value = data
-      }
-    }
-  } catch {
-    // Keep placeholder data
+  await fetchCategories()
+  await fetchLetters()
+  // Fetch images for all letters
+  for (const letter of letters.value) {
+    await fetchLetterImages(letter.id)
   }
 })
 </script>

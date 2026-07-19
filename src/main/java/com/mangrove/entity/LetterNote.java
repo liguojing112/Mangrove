@@ -21,20 +21,17 @@ public class LetterNote {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "artist_id", nullable = false)
-    private Artist artist;
+    @Column(name = "artist_id", nullable = false)
+    private Long artistId;
 
     @Column(nullable = false, length = 200)
     private String title;
 
-    @Lob
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "ENUM('QUOTE','LETTER','DIARY','MONOLOGUE')")
-    private Category category;
+    @Column(nullable = false, length = 50)
+    private String category;
 
     @Column(length = 200)
     private String source;
@@ -53,8 +50,4 @@ public class LetterNote {
 
     @Column(name = "created_at", nullable = false, columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
-
-    public enum Category {
-        QUOTE, LETTER, DIARY, MONOLOGUE
-    }
 }

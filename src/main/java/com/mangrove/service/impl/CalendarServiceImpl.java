@@ -28,9 +28,6 @@ public class CalendarServiceImpl implements CalendarService {
         Artist artist = artistRepository.findById(artistId)
                 .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND, "艺人不存在"));
 
-        SysUser user = sysUserRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND, "用户不存在"));
-
         LocalDate today = LocalDate.now();
 
         long aliveDays = 0;
@@ -38,23 +35,34 @@ public class CalendarServiceImpl implements CalendarService {
             aliveDays = ChronoUnit.DAYS.between(artist.getBirthDate(), today);
         }
 
-        long loveDays = 0;
-        if (user.getCreatedAt() != null) {
-            loveDays = ChronoUnit.DAYS.between(user.getCreatedAt().toLocalDate(), today);
+        Long loveDays = null;
+        String loveStartDate = null;
+        if (userId != null) {
+            SysUser user = sysUserRepository.findById(userId).orElse(null);
+            if (user != null && user.getFavoriteStartDate() != null) {
+                loveDays = ChronoUnit.DAYS.between(user.getFavoriteStartDate(), today);
+                loveStartDate = user.getFavoriteStartDate().toString();
+            }
         }
 
         long debutDays = 0;
+        String debutDateStr = null;
         if (artist.getDebutDate() != null) {
             debutDays = ChronoUnit.DAYS.between(artist.getDebutDate(), today);
+            debutDateStr = artist.getDebutDate().toString();
         }
 
+        String birthDateStr = artist.getBirthDate() != null ? artist.getBirthDate().toString() : null;
+
         long nextBirthdayDays = 0;
+        String nextBirthdayDate = null;
         if (artist.getBirthDate() != null) {
             LocalDate nextBirthday = artist.getBirthDate().withYear(today.getYear());
             if (nextBirthday.isBefore(today) || nextBirthday.isEqual(today)) {
                 nextBirthday = nextBirthday.plusYears(1);
             }
             nextBirthdayDays = ChronoUnit.DAYS.between(today, nextBirthday);
+            nextBirthdayDate = nextBirthday.toString();
         }
 
         return CalendarResponse.builder()
@@ -62,6 +70,10 @@ public class CalendarServiceImpl implements CalendarService {
                 .loveDays(loveDays)
                 .debutDays(debutDays)
                 .nextBirthdayDays(nextBirthdayDays)
+                .nextBirthdayDate(nextBirthdayDate)
+                .birthDate(birthDateStr)
+                .debutDate(debutDateStr)
+                .loveStartDate(loveStartDate)
                 .build();
     }
 }

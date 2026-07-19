@@ -8,6 +8,10 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "merchandise")
@@ -25,7 +29,7 @@ public class Merchandise {
     private String name;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "ENUM('PHOTOCARD','HAND_BANNER','PHYSICAL')")
+    @Column(nullable = false, columnDefinition = "ENUM('PHOTOCARD','HAND_BANNER','PHYSICAL','DIGITAL','ARCHIVE','BUNDLE')")
     private Category category;
 
     @Column(name = "sub_category", length = 50)
@@ -39,6 +43,34 @@ public class Merchandise {
 
     @Column(name = "thumbnail_url", length = 500)
     private String thumbnailUrl;
+
+    @Column(name = "card_front_image_url", length = 500)
+    private String cardFrontImageUrl;
+
+    @Column(name = "card_back_image_url", length = 500)
+    private String cardBackImageUrl;
+
+    @Column(name = "profile_image_url", length = 500)
+    private String profileImageUrl;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "bundle_image_urls", columnDefinition = "JSON")
+    private List<String> bundleImageUrls;
+
+    @Column(name = "producer_id")
+    private Long producerId;
+
+    @Column(name = "producer_name", length = 100)
+    private String producerName;
+
+    @Column(name = "producer_username", length = 50)
+    private String producerUsername;
+
+    @Column(name = "producer_public_id", length = 20)
+    private String producerPublicId;
+
+    @Column(name = "producer_role", length = 30)
+    private String producerRole;
 
     @Column(length = 500)
     private String tags;
@@ -64,7 +96,7 @@ public class Merchandise {
     private LocalDateTime updatedAt;
 
     public enum Category {
-        PHOTOCARD, HAND_BANNER, PHYSICAL
+        PHOTOCARD, HAND_BANNER, PHYSICAL, DIGITAL, ARCHIVE, BUNDLE
     }
 
     public enum Rarity {

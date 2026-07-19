@@ -3,6 +3,7 @@ package com.mangrove.service;
 import com.mangrove.dto.request.MerchandiseRequest;
 import com.mangrove.dto.response.PageResult;
 import com.mangrove.entity.Merchandise;
+import java.util.List;
 
 public interface MerchandiseService {
 
@@ -11,6 +12,8 @@ public interface MerchandiseService {
     Merchandise getById(Long id);
 
     Merchandise create(MerchandiseRequest req);
+
+    List<Merchandise> listMine();
 
     Merchandise update(Long id, MerchandiseRequest req);
 

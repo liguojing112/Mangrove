@@ -8,6 +8,7 @@ import com.mangrove.entity.Artist;
 import com.mangrove.entity.Merchandise;
 import com.mangrove.repository.ArtistRepository;
 import com.mangrove.repository.MerchandiseRepository;
+import com.mangrove.repository.SysUserRepository;
 import com.mangrove.service.MerchandiseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,6 +32,7 @@ public class MerchandiseServiceImpl implements MerchandiseService {
 
     private final MerchandiseRepository merchandiseRepository;
     private final ArtistRepository artistRepository;
+    private final SysUserRepository sysUserRepository;
 
     @Override
     public PageResult<Merchandise> list(Integer page, Integer size, String category, String rarity) {
@@ -67,11 +71,40 @@ public class MerchandiseServiceImpl implements MerchandiseService {
     @Override
     @Transactional
     public Merchandise create(MerchandiseRequest req) {
+        Merchandise.Category category = Merchandise.Category.valueOf(req.getCategory());
+        String frontImageUrl = trimToNull(req.getCardFrontImageUrl());
+        String highResImageUrl = trimToNull(req.getHighResImageUrl());
+        String profileImageUrl = trimToNull(req.getProfileImageUrl());
+        List<String> bundleImageUrls = sanitizeUrls(req.getBundleImageUrls());
+        if ((category == Merchandise.Category.PHOTOCARD || category == Merchandise.Category.HAND_BANNER)
+                && frontImageUrl == null) {
+            throw new BusinessException(ResultCode.BAD_REQUEST,
+                    category == Merchandise.Category.PHOTOCARD ? "请上传小卡卡面" : "请上传纸质周边正面");
+        }
+        if (category == Merchandise.Category.BUNDLE && trimToNull(req.getDescription()) == null) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "请填写设计介绍");
+        }
+        if (category == Merchandise.Category.BUNDLE && bundleImageUrls.isEmpty()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "请至少上传一张套装周边图片");
+        }
+        if (highResImageUrl == null && category == Merchandise.Category.BUNDLE) {
+            highResImageUrl = bundleImageUrls.get(0);
+        }
+        if (highResImageUrl == null) {
+            highResImageUrl = frontImageUrl;
+        }
+        if (highResImageUrl == null) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "请上传周边图片");
+        }
         Merchandise merchandise = Merchandise.builder()
                 .name(req.getName())
                 .description(req.getDescription())
-                .highResImageUrl(req.getHighResImageUrl())
+                .highResImageUrl(highResImageUrl)
                 .thumbnailUrl(req.getThumbnailUrl())
+                .cardFrontImageUrl(frontImageUrl)
+                .cardBackImageUrl(trimToNull(req.getCardBackImageUrl()))
+                .profileImageUrl(profileImageUrl)
+                .bundleImageUrls(bundleImageUrls)
                 .tags(req.getTags())
                 .subCategory(req.getSubCategory())
                 .status(1)
@@ -79,7 +112,9 @@ public class MerchandiseServiceImpl implements MerchandiseService {
                 .updatedAt(LocalDateTime.now())
                 .build();
 
-        merchandise.setCategory(Merchandise.Category.valueOf(req.getCategory()));
+        applyProducer(merchandise);
+
+        merchandise.setCategory(category);
 
         if (req.getRarity() != null && !req.getRarity().isBlank()) {
             merchandise.setRarity(Merchandise.Rarity.valueOf(req.getRarity()));
@@ -98,6 +133,12 @@ public class MerchandiseServiceImpl implements MerchandiseService {
         }
 
         return merchandiseRepository.save(merchandise);
+    }
+
+    @Override
+    public List<Merchandise> listMine() {
+        SysUserContext user = currentUser();
+        return merchandiseRepository.findByProducerIdOrderByCreatedAtDesc(user.id());
     }
 
     @Override
@@ -122,6 +163,18 @@ public class MerchandiseServiceImpl implements MerchandiseService {
         if (req.getThumbnailUrl() != null) {
             merchandise.setThumbnailUrl(req.getThumbnailUrl());
         }
+        if (req.getCardFrontImageUrl() != null) {
+            merchandise.setCardFrontImageUrl(trimToNull(req.getCardFrontImageUrl()));
+        }
+        if (req.getCardBackImageUrl() != null) {
+            merchandise.setCardBackImageUrl(trimToNull(req.getCardBackImageUrl()));
+        }
+        if (req.getProfileImageUrl() != null) {
+            merchandise.setProfileImageUrl(trimToNull(req.getProfileImageUrl()));
+        }
+        if (req.getBundleImageUrls() != null) {
+            merchandise.setBundleImageUrls(sanitizeUrls(req.getBundleImageUrls()));
+        }
         if (req.getTags() != null) {
             merchandise.setTags(req.getTags());
         }
@@ -139,6 +192,38 @@ public class MerchandiseServiceImpl implements MerchandiseService {
         merchandise.setUpdatedAt(LocalDateTime.now());
         return merchandiseRepository.save(merchandise);
     }
+
+    private String trimToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private List<String> sanitizeUrls(List<String> urls) {
+        if (urls == null) {
+            return List.of();
+        }
+        return urls.stream().map(this::trimToNull).filter(java.util.Objects::nonNull).toList();
+    }
+
+    private void applyProducer(Merchandise merchandise) {
+        SysUserContext user = currentUser();
+        merchandise.setProducerId(user.id());
+        merchandise.setProducerName(user.name());
+        merchandise.setProducerUsername(user.username());
+        merchandise.setProducerPublicId(user.publicId());
+        merchandise.setProducerRole(user.role());
+    }
+
+    private SysUserContext currentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
+            throw new BusinessException(ResultCode.UNAUTHORIZED, "请先登录");
+        }
+        com.mangrove.entity.SysUser user = sysUserRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new BusinessException(ResultCode.UNAUTHORIZED, "用户不存在"));
+        return new SysUserContext(user.getId(), user.getNickname(), user.getUsername(), user.getPublicId(), user.getRole().name());
+    }
+
+    private record SysUserContext(Long id, String name, String username, String publicId, String role) {}
 
     @Override
     @Transactional

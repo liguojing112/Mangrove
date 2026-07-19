@@ -5,24 +5,45 @@
     <p class="text-gray-500 mb-8">分享你的想法，和小伙伴们一起讨论</p>
 
     <!-- New Post Card -->
-    <div class="card p-6 mb-8">
+    <div v-if="isLoggedIn" class="card p-6 mb-8">
       <textarea
+        v-model="newContent"
         placeholder="写下你想说的话..."
         class="w-full rounded-xl border border-gray-200 p-4 text-sm min-h-[100px] resize-none focus:outline-none focus:ring-2 focus:ring-mangrove-500 focus:border-transparent"
       ></textarea>
+      <!-- Image Preview -->
+      <div v-if="imagePreview" class="mt-3 relative inline-block">
+        <img :src="imagePreview" class="max-h-32 rounded-lg border border-gray-200" />
+        <button class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center" @click="removeImage">✕</button>
+      </div>
       <div class="flex items-center justify-between mt-4">
         <div class="flex items-center gap-2">
-          <span class="tag">选择板块</span>
+          <label class="cursor-pointer text-gray-400 hover:text-mangrove-600 transition-colors">
+            <ImageIcon class="w-5 h-5" />
+            <input type="file" accept="image/*" class="hidden" @change="handleImageSelect" />
+          </label>
+          <span class="tag">{{ currentUser?.nickname || '匿名用户' }}</span>
         </div>
-        <button class="btn-primary text-sm">发布</button>
+        <button class="btn-primary text-sm" @click="submitComment" :disabled="!newContent.trim()">
+          发布
+        </button>
       </div>
+    </div>
+    <div v-else class="card p-6 mb-8 text-center">
+      <p class="text-gray-500">登录后参与讨论</p>
+      <router-link to="/login" class="btn-primary inline-block mt-3">立即登录</router-link>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="loading" class="text-center py-8">
+      <p class="text-gray-400">加载中...</p>
     </div>
 
     <!-- Feed -->
-    <div class="space-y-4">
+    <div v-else class="space-y-4">
       <div
-        v-for="post in posts"
-        :key="post.id"
+        v-for="comment in comments"
+        :key="comment.id"
         class="card-hover p-5"
       >
         <!-- Post Header -->
@@ -31,96 +52,189 @@
             <User class="w-5 h-5 text-mangrove-700" />
           </div>
           <div>
-            <span class="font-medium text-gray-900 text-sm">{{ post.nickname }}</span>
-            <span class="text-xs text-gray-400 ml-2">{{ post.time }}</span>
+            <span class="font-medium text-gray-900 text-sm">{{ comment.user?.nickname || '匿名用户' }}</span>
+            <span class="text-xs text-gray-400 ml-2">{{ formatTime(comment.createdAt) }}</span>
           </div>
         </div>
 
-        <!-- Target Badge -->
-        <div class="mt-3">
-          <span class="tag">{{ post.target }}</span>
-        </div>
-
         <!-- Content -->
-        <p class="text-gray-700 mt-2 text-sm leading-relaxed">{{ post.content }}</p>
+        <p class="text-gray-700 mt-3 text-sm leading-relaxed">{{ comment.content }}</p>
+        <img v-if="comment.imageUrl" :src="comment.imageUrl" class="mt-3 max-h-48 rounded-lg border border-gray-200" />
 
         <!-- Footer -->
         <div class="flex items-center gap-4 mt-3 text-xs text-gray-400">
-          <button class="flex items-center gap-1 hover:text-mangrove-600 transition-colors">
-            <Heart class="w-3.5 h-3.5" />
-            <span>{{ post.likes }}</span>
-          </button>
-          <button class="flex items-center gap-1 hover:text-mangrove-600 transition-colors">
-            <MessageCircle class="w-3.5 h-3.5" />
-            <span>{{ post.replies }}</span>
+          <button
+            class="flex items-center gap-1 hover:text-mangrove-600 transition-colors"
+            @click="toggleLike(comment)"
+          >
+            <Heart class="w-3.5 h-3.5" :class="comment.liked ? 'fill-pink-500 text-pink-500' : ''" />
+            <span>{{ comment.likeCount || 0 }}</span>
           </button>
         </div>
 
-        <!-- Reply -->
-        <div
-          v-if="post.reply"
-          class="ml-12 border-l-2 border-gray-100 pl-4 mt-3 text-sm text-gray-600"
-        >
-          <p>{{ post.reply }}</p>
+        <!-- Replies -->
+        <div v-if="comment.children && comment.children.length > 0" class="ml-12 border-l-2 border-gray-100 pl-4 mt-3 space-y-2">
+          <div v-for="reply in comment.children" :key="reply.id" class="text-sm text-gray-600">
+            <span class="font-medium">{{ reply.user?.nickname || '匿名用户' }}：</span>
+            <span>{{ reply.content }}</span>
+          </div>
         </div>
       </div>
+
+      <!-- Empty State -->
+      <div v-if="comments.length === 0" class="text-center py-12">
+        <MessageCircle class="w-12 h-12 text-gray-300 mx-auto mb-3" />
+        <p class="text-gray-400">还没有评论，快来抢沙发吧！</p>
+      </div>
+    </div>
+
+    <!-- Load More -->
+    <div v-if="hasMore" class="text-center mt-6">
+      <button class="btn-secondary text-sm" @click="loadMore">加载更多</button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { User, Heart, MessageCircle } from 'lucide-vue-next'
+import { ref, onMounted } from 'vue'
+import { User, Heart, MessageCircle, Image as ImageIcon } from 'lucide-vue-next'
+import { useAuth } from '@/composables/useAuth'
 
-const posts = [
-  {
-    id: 1,
-    nickname: '星河漫步',
-    time: '2 小时前',
-    target: '@小芒新专辑',
-    content: '新专辑太好听了！每首歌都是精品，循环播放一整天都不腻。最喜欢第三首的编曲，层次感拉满！',
-    likes: 128,
-    replies: 32,
-    reply: '芒果小达人：同感！第三首的间奏太绝了',
-  },
-  {
-    id: 2,
-    nickname: '夏日清风',
-    time: '5 小时前',
-    target: '@小芒新专辑',
-    content: '今天线下听了新歌，现场氛围太棒了！小芒的嗓音比录音室版本更有感染力。',
-    likes: 89,
-    replies: 15,
-    reply: null,
-  },
-  {
-    id: 3,
-    nickname: '绿野仙踪',
-    time: '8 小时前',
-    target: '@小芒演唱会',
-    content: '抢到票了！终于可以去现场了，期待了好久。有没有一起去的小伙伴？可以拼车～',
-    likes: 256,
-    replies: 48,
-    reply: '青芒守护者：我也抢到了！我们可以一起',
-  },
-  {
-    id: 4,
-    nickname: '芒果小达人',
-    time: '1 天前',
-    target: '@小芒周边',
-    content: '刚入手了新款应援手环，质量超好！戴在手上手感很棒，颜色也很正。推荐大家入手！',
-    likes: 67,
-    replies: 12,
-    reply: null,
-  },
-  {
-    id: 5,
-    nickname: '青芒守护者',
-    time: '2 天前',
-    target: '@小芒新专辑',
-    content: '把新专辑的歌词都打印出来了，准备学习里面的舞蹈动作。有没有一起练舞的？',
-    likes: 45,
-    replies: 8,
-    reply: '星河漫步：加我一个！我也想学',
-  },
-]
+const { isLoggedIn, currentUser, getToken } = useAuth()
+
+const comments = ref([])
+const newContent = ref('')
+const imageFile = ref(null)
+const imagePreview = ref('')
+const uploading = ref(false)
+const loading = ref(false)
+const page = ref(0)
+const hasMore = ref(true)
+
+function handleImageSelect(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  imageFile.value = file
+  const reader = new FileReader()
+  reader.onload = (ev) => { imagePreview.value = ev.target.result }
+  reader.readAsDataURL(file)
+}
+
+function removeImage() {
+  imageFile.value = null
+  imagePreview.value = ''
+}
+
+async function uploadImage() {
+  if (!imageFile.value) return null
+  const formData = new FormData()
+  formData.append('file', imageFile.value)
+  try {
+    const res = await fetch('/api/files/upload', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${getToken()}` },
+      body: formData
+    })
+    const json = await res.json()
+    if (json.code === 200 && json.data) {
+      return json.data.url || json.data
+    }
+  } catch (e) {
+    console.error('上传图片失败:', e)
+  }
+  return null
+}
+
+async function fetchComments() {
+  loading.value = true
+  try {
+    const res = await fetch(`/api/comments?targetType=COMMUNITY&targetId=1&page=${page.value}&size=20`)
+    const json = await res.json()
+    if (json.code === 200 && json.data) {
+      if (page.value === 0) {
+        comments.value = json.data.content || []
+      } else {
+        comments.value.push(...(json.data.content || []))
+      }
+      hasMore.value = comments.value.length < json.data.totalElements
+    }
+  } catch (e) {
+    console.error('加载评论失败:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function submitComment() {
+  if (!newContent.value.trim()) return
+  uploading.value = true
+  try {
+    let imageUrl = null
+    if (imageFile.value) {
+      imageUrl = await uploadImage()
+    }
+    const res = await fetch('/api/comments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify({
+        targetType: 'COMMUNITY',
+        targetId: 1,
+        content: newContent.value.trim(),
+        imageUrl
+      })
+    })
+    const json = await res.json()
+    if (json.code === 200 && json.data) {
+      newContent.value = ''
+      removeImage()
+      page.value = 0
+      await fetchComments()
+    }
+  } catch (e) {
+    console.error('发布失败:', e)
+  } finally {
+    uploading.value = false
+  }
+}
+
+async function toggleLike(comment) {
+  if (!isLoggedIn.value) return
+  try {
+    const res = await fetch(`/api/comments/${comment.id}/like`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    })
+    const json = await res.json()
+    if (json.code === 200) {
+      comment.liked = !comment.liked
+      comment.likeCount = comment.liked ? (comment.likeCount || 0) + 1 : Math.max(0, (comment.likeCount || 0) - 1)
+    }
+  } catch (e) {
+    console.error('点赞失败:', e)
+  }
+}
+
+function loadMore() {
+  page.value++
+  fetchComments()
+}
+
+function formatTime(dateStr) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diff = (now - date) / 1000
+  if (diff < 60) return '刚刚'
+  if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`
+  if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`
+  if (diff < 604800) return `${Math.floor(diff / 86400)} 天前`
+  return date.toLocaleDateString()
+}
+
+onMounted(() => {
+  fetchComments()
+})
 </script>

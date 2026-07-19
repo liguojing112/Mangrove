@@ -10,15 +10,20 @@ import com.mangrove.entity.Merchandise;
 import com.mangrove.entity.Schedule;
 import com.mangrove.repository.AlbumRepository;
 import com.mangrove.repository.ArtistRepository;
+import com.mangrove.repository.FanWorkRepository;
 import com.mangrove.repository.MerchandiseRepository;
 import com.mangrove.repository.ScheduleRepository;
+import com.mangrove.repository.SysConfigRepository;
+import com.mangrove.repository.SysUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/public")
@@ -29,6 +34,9 @@ public class PublicController {
     private final MerchandiseRepository merchandiseRepository;
     private final AlbumRepository albumRepository;
     private final ScheduleRepository scheduleRepository;
+    private final SysUserRepository sysUserRepository;
+    private final FanWorkRepository fanWorkRepository;
+    private final SysConfigRepository sysConfigRepository;
 
     @GetMapping("/artists")
     public Result<List<Artist>> listArtists() {
@@ -98,5 +106,22 @@ public class PublicController {
     public Result<List<Schedule>> listSchedules() {
         List<Schedule> schedules = scheduleRepository.findByStatusOrderByStartTimeAsc(1, Pageable.unpaged());
         return Result.success(schedules);
+    }
+
+    @GetMapping("/stats")
+    public Result<Map<String, Long>> stats() {
+        Map<String, Long> data = new LinkedHashMap<>();
+        data.put("fanCount", sysUserRepository.count());
+        data.put("artistCount", artistRepository.count());
+        data.put("workCount", fanWorkRepository.count());
+        data.put("merchandiseCount", merchandiseRepository.count());
+        return Result.success(data);
+    }
+
+    @GetMapping("/config/{key}")
+    public Result<String> getConfig(@PathVariable String key) {
+        return sysConfigRepository.findByConfigKey(key)
+                .map(c -> Result.success(c.getConfigValue()))
+                .orElse(Result.success(null));
     }
 }

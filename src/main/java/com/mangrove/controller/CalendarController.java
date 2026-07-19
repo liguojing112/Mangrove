@@ -20,10 +20,12 @@ public class CalendarController {
 
     @GetMapping("/days")
     public Result<CalendarResponse> days(@RequestParam Long artistId, Authentication authentication) {
-        String username = authentication.getName();
-        Long userId = sysUserRepository.findByUsername(username)
-                .orElseThrow(() -> new BusinessException(ResultCode.UNAUTHORIZED, "用户不存在"))
-                .getId();
+        Long userId = null;
+        if (authentication != null) {
+            userId = sysUserRepository.findByUsername(authentication.getName())
+                    .map(u -> u.getId())
+                    .orElse(null);
+        }
         return Result.success(calendarService.getDays(userId, artistId));
     }
 }

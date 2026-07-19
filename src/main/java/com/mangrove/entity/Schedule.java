@@ -46,6 +46,9 @@ public class Schedule {
     @Column(name = "cover_url", length = 500)
     private String coverUrl;
 
+    @Column(name = "video_link", length = 500)
+    private String videoLink;
+
     @Column(nullable = false, columnDefinition = "TINYINT DEFAULT 1")
     private Integer status;
 
