@@ -35,31 +35,48 @@
       </router-link>
     </div>
 
-    <!-- 封面设置 -->
+    <!-- 照片馆藏 Hero 封面设置（5 张独立卡片） -->
     <div class="card p-5 mb-8">
-      <h2 class="text-sm font-semibold text-gray-800 mb-4">🖼️ 照片馆藏 - Hero 封面设置</h2>
-      <div class="flex items-start gap-6">
-        <!-- 预览 -->
-        <div class="w-48 h-32 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
-          <img v-if="coverUrl" :src="coverUrl" class="w-full h-full object-cover" />
-          <Image v-else class="w-8 h-8 text-gray-300" />
-        </div>
-        <div class="flex-1">
-          <p class="text-sm text-gray-600 mb-3">上传艺人照片作为照片馆藏页面的 Hero 封面图</p>
-          <div class="flex items-center gap-3">
-            <label class="btn-outline text-sm cursor-pointer flex items-center gap-2">
-              <Upload class="w-4 h-4" />
-              选择图片
-              <input type="file" accept="image/*" class="hidden" @change="handleCoverUpload" />
-            </label>
-            <span v-if="uploading" class="text-sm text-gray-400">上传中...</span>
-            <span v-else-if="coverUrl" class="text-sm text-green-600 flex items-center gap-1">
-              <CheckCircle class="w-4 h-4" /> 已设置
-            </span>
+      <h2 class="text-sm font-semibold text-gray-800 mb-1">🖼️ 照片馆藏 - Hero 卡片设置</h2>
+      <p class="text-xs text-gray-400 mb-4">为照片页顶部的五张轮播大卡片分别上传照片（每张卡片有独立配色和标题）</p>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div v-for="(card, idx) in heroCards" :key="card.id"
+          class="rounded-xl border p-3 flex flex-col items-center gap-2"
+          :style="{ borderColor: card.borderColor }">
+          <!-- 色条 -->
+          <div class="w-full h-1.5 rounded-full" :style="{ background: card.gradient }"></div>
+          <!-- 图标 + 标题 -->
+          <div class="flex items-center gap-1.5">
+            <component :is="card.iconComp" :size="14" :style="{ color: card.accentColor }" />
+            <span class="text-xs font-medium text-gray-700">{{ card.label }}</span>
           </div>
-          <p v-if="uploadMsg" class="text-xs mt-2" :class="uploadMsg.includes('成功') ? 'text-green-600' : 'text-red-500'">{{ uploadMsg }}</p>
+          <!-- 预览图 -->
+          <div class="w-full aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center"
+            :class="{ 'border-dashed': !card.url }">
+            <img v-if="card.url" :src="card.url" class="w-full h-full object-cover" />
+            <Image v-else class="w-8 h-8 text-gray-300" />
+          </div>
+          <!-- 操作 -->
+          <div class="flex items-center gap-1.5 w-full">
+            <label class="flex-1 text-center text-[11px] px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-200 cursor-pointer transition-colors text-gray-500">
+              <Upload class="w-3 h-3 inline mr-1" />{{ card.url ? '更换' : '上传' }}
+              <input type="file" accept="image/*" class="hidden" @change="e => handleHeroCardUpload(idx, e)" />
+            </label>
+            <button v-if="card.url" @click="removeHeroCard(idx)"
+              class="text-[11px] px-2 py-1.5 rounded-lg text-red-400 hover:bg-red-50 border border-transparent hover:border-red-200 transition-colors"
+              title="移除">✕</button>
+          </div>
+          <!-- 状态 -->
+          <span v-if="card.uploading" class="text-[10px] text-gray-400">上传中...</span>
+          <span v-else-if="card.url" class="text-[10px] text-green-500 flex items-center gap-0.5">
+            <CheckCircle class="w-3 h-3" />已设置
+          </span>
+          <span v-else class="text-[10px] text-gray-300">未设置</span>
         </div>
       </div>
+      <!-- 全局消息 -->
+      <p v-if="heroCardsMsg" class="text-xs mt-3 text-center"
+        :class="heroCardsMsg.startsWith('✓') ? 'text-green-600' : 'text-red-500'">{{ heroCardsMsg }}</p>
     </div>
 
     <!-- 芒果园背景图设置 -->
@@ -118,8 +135,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { Users, PenTool, Gift, FileText, ShieldCheck, Upload, Image, CheckCircle, FolderOpen, TreePine, Trash2 } from 'lucide-vue-next'
+import { ref, reactive, onMounted } from 'vue'
+import { Users, PenTool, Gift, FileText, ShieldCheck, Upload, Image, CheckCircle, FolderOpen, TreePine, Trash2, Sparkles, Star, Sun, MapPin, Eye } from 'lucide-vue-next'
 
 const stats = ref([
   { label: '艺人', value: 0, icon: Users },
@@ -130,56 +147,81 @@ const stats = ref([
 
 const loading = ref(true)
 
-// 封面上传
-const coverUrl = ref('')
-const uploading = ref(false)
-const uploadMsg = ref('')
+// ── 照片馆藏 Hero 卡片（5 张） ──
+const HERO_CARD_DEFS = [
+  { id: 'spotlight', label: '聚光时刻', gradient: 'linear-gradient(90deg,#1b6842,#3ec97a)', borderColor: '#a3e6c0', accentColor: '#1b6842', iconComp: Sparkles },
+  { id: 'stage',     label: '舞台光影', gradient: 'linear-gradient(90deg,#3b2d6e,#7c5ce0)', borderColor: '#c4b5fd', accentColor: '#7c5ce0', iconComp: Star },
+  { id: 'daily',     label: '日常碎片', gradient: 'linear-gradient(90deg,#b85c1e,#f59e4b)', borderColor: '#fcd9a7', accentColor: '#f59e4b', iconComp: Sun },
+  { id: 'event',     label: '活动掠影', gradient: 'linear-gradient(90deg,#1a4a8a,#4da6ff)', borderColor: '#a3d0ff', accentColor: '#4da6ff', iconComp: MapPin },
+  { id: 'candid',    label: '路透珍藏', gradient: 'linear-gradient(90deg,#8b6914,#e8b830)', borderColor: '#fde68a', accentColor: '#e8b830', iconComp: Eye },
+]
 
-async function handleCoverUpload(e) {
+const heroCards = reactive(HERO_CARD_DEFS.map(def => ({
+  ...def,
+  url: '',
+  uploading: false,
+})))
+const heroCardsMsg = ref('')
+
+async function fetchHeroCards() {
+  try {
+    const res = await fetch('/api/admin/config/photos_hero_cards', {
+      headers: { Authorization: `Bearer ${getToken()}` }
+    })
+    const json = await res.json()
+    if (json.code === 200 && Array.isArray(json.data)) {
+      json.data.forEach((url, i) => {
+        if (i < heroCards.length && url) heroCards[i].url = url
+      })
+    }
+  } catch {}
+}
+
+async function saveHeroCards() {
+  const urls = heroCards.map(c => c.url || '')
+  await fetch('/api/admin/config/photos_hero_cards', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+    body: JSON.stringify({ value: JSON.stringify(urls) })
+  })
+}
+
+async function handleHeroCardUpload(idx, e) {
   const file = e.target.files?.[0]
   if (!file) return
-  const token = getToken()
-  if (!token) {
-    uploadMsg.value = '请先登录（localStorage 中无 token）'
-    return
-  }
-  uploading.value = true
-  uploadMsg.value = `调试: token=${token.substring(0, 30)}...`
+  heroCards[idx].uploading = true
+  heroCardsMsg.value = ''
   try {
     const formData = new FormData()
     formData.append('file', file)
     const res = await fetch('/api/files/upload', {
-      method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData
+      method: 'POST',
+      headers: { Authorization: `Bearer ${getToken()}` },
+      body: formData
     })
-    if (!res.ok) {
-      uploadMsg.value = `上传失败(${res.status})`
-      return
-    }
     const json = await res.json()
-    if (json.code !== 200) {
-      uploadMsg.value = json.msg || '上传失败'
-      return
-    }
-    coverUrl.value = json.data.url
-    const artistRes = await fetch('/api/public/artists')
-    const artistJson = await artistRes.json()
-    if (artistJson.code !== 200 || !artistJson.data?.length) {
-      uploadMsg.value = '图片已上传，但未找到艺人信息'
-      return
-    }
-    const artist = artistJson.data[0]
-    const updateRes = await fetch(`/api/files/cover/${artist.id}?coverUrl=${encodeURIComponent(coverUrl.value)}`, {
-      method: 'PUT'
-    })
-    if (updateRes.ok) {
-      uploadMsg.value = '上传成功！封面已更新'
-    } else {
-      const err = await updateRes.json().catch(() => ({}))
-      uploadMsg.value = `保存失败(${updateRes.status}): ${err.msg || ''}`
-    }
-  } catch {
-    uploadMsg.value = '上传失败，请检查网络'
-  } finally { uploading.value = false }
+    if (json.code !== 200) throw new Error(json.msg || '上传失败')
+    heroCards[idx].url = json.data.url
+    await saveHeroCards()
+    heroCardsMsg.value = `✓ 「${HERO_CARD_DEFS[idx].label}」照片已更新`
+    setTimeout(() => { heroCardsMsg.value = '' }, 3000)
+  } catch (err) {
+    heroCardsMsg.value = '✗ ' + err.message
+  } finally {
+    heroCards[idx].uploading = false
+    e.target.value = ''
+  }
+}
+
+async function removeHeroCard(idx) {
+  heroCards[idx].url = ''
+  try {
+    await saveHeroCards()
+    heroCardsMsg.value = `✓ 「${HERO_CARD_DEFS[idx].label}」照片已移除`
+    setTimeout(() => { heroCardsMsg.value = '' }, 3000)
+  } catch (err) {
+    heroCardsMsg.value = '✗ ' + err.message
+  }
 }
 
 function getToken() {
@@ -315,6 +357,7 @@ async function removeLittleTreeBg() {
 onMounted(async () => {
   fetchTreeBg()
   fetchLittleTreeBg()
+  fetchHeroCards()
   try {
     const res = await fetch('/api/admin/dashboard', {
       headers: { 'Authorization': `Bearer ${getToken()}` }

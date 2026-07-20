@@ -11,28 +11,28 @@
         :autoplay="heroSlides.length > 1 ? { delay: 4800, disableOnInteraction: false, pauseOnMouseEnter: true } : false"
         :pagination="{ clickable: true }"
       >
-        <SwiperSlide v-for="(slide, index) in heroSlides" :key="`${slide.imageUrl || 'empty'}-${index}`">
-          <article class="photo-hero-card">
-            <div class="photo-hero-glow photo-hero-glow--top"></div>
-            <div class="photo-hero-glow photo-hero-glow--bottom"></div>
+        <SwiperSlide v-for="(slide, index) in heroSlides" :key="slide.id">
+          <article class="photo-hero-card" :style="{ background: slide.background, boxShadow: slide.shadow }">
+            <div class="photo-hero-glow photo-hero-glow--top" :style="{ background: slide.glowTop || 'rgba(255,255,255,0.15)' }"></div>
+            <div class="photo-hero-glow photo-hero-glow--bottom" :style="{ background: slide.glowBottom || 'rgba(255,255,255,0.1)' }"></div>
             <div class="photo-hero-grid"></div>
 
             <div class="photo-hero-copy">
-              <div class="photo-hero-kicker"><Camera :size="15" /><span>PHOTO ARCHIVE</span></div>
-              <h2>收藏每一份<br class="hidden sm:block" />精彩瞬间</h2>
-              <p>记录每一次心动 · 定格每一份美好</p>
+              <div class="photo-hero-kicker"><component :is="slide.icon" :size="15" /><span>{{ slide.kicker }}</span></div>
+              <h2>{{ slide.heading }}<br class="hidden sm:block" />精彩瞬间</h2>
+              <p>{{ slide.subtitle }}</p>
               <div class="photo-hero-rule"><span></span></div>
             </div>
 
             <figure v-if="slide.imageUrl" class="photo-hero-photo">
               <div class="photo-hero-photo-shine"></div>
-              <img :src="slide.imageUrl" :alt="slide.title || '精选照片'" />
+              <img :src="slide.imageUrl" :alt="slide.heading" />
               <figcaption v-if="slide.title" class="photo-hero-caption">
                 <span>{{ slide.title }}</span><span>{{ String(index + 1).padStart(2, '0') }}</span>
               </figcaption>
             </figure>
             <div v-else class="photo-hero-photo photo-hero-placeholder">
-              <Camera :size="42" />
+              <component :is="slide.icon" :size="42" />
               <span>等待一份新的美好</span>
             </div>
           </article>
@@ -97,7 +97,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Search, Camera, Heart } from 'lucide-vue-next'
+import { Search, Camera, Heart, Sparkles, Star, Sun, MapPin, Eye } from 'lucide-vue-next'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { A11y, Autoplay, Pagination } from 'swiper/modules'
 
@@ -112,22 +112,99 @@ const activeCategory = ref('all')
 const loading = ref(true)
 const photos = ref([])
 const backendCats = ref([])
+const heroCardUrls = ref([]) // 从管理后台配置的 5 张 Hero 卡片照片
+
+const fetchHeroCardUrls = async () => {
+  try {
+    const res = await fetch('/api/public/config/photos-hero-cards')
+    const json = await res.json()
+    if (json.code === 200 && Array.isArray(json.data)) {
+      heroCardUrls.value = json.data
+    }
+  } catch {}
+}
 
 const heroSlides = computed(() => {
-  const seen = new Set()
-  const slides = []
+  // 五张预定义风格卡片：各有独立的颜色、标题、图标
+  const definitions = [
+    {
+      id: 'spotlight',
+      kicker: 'SPOTLIGHT',
+      heading: '聚光时刻',
+      subtitle: '舞台上的每一个高光瞬间',
+      icon: Sparkles,
+      background: 'linear-gradient(112deg, #0f2b1a 0%, #1b6842 47%, #3ec97a 100%)',
+      shadow: '0 24px 56px -28px rgba(15, 71, 43, 0.75)',
+      glowTop: 'rgba(138, 255, 164, 0.30)',
+      glowBottom: 'rgba(70, 202, 125, 0.25)',
+    },
+    {
+      id: 'stage',
+      kicker: 'ON STAGE',
+      heading: '舞台光影',
+      subtitle: '灯光之下，魅力无限',
+      icon: Star,
+      background: 'linear-gradient(112deg, #1a1035 0%, #3b2d6e 47%, #7c5ce0 100%)',
+      shadow: '0 24px 56px -28px rgba(60, 35, 110, 0.75)',
+      glowTop: 'rgba(160, 140, 255, 0.28)',
+      glowBottom: 'rgba(120, 90, 220, 0.22)',
+    },
+    {
+      id: 'daily',
+      kicker: 'DAILY LIFE',
+      heading: '日常碎片',
+      subtitle: '镜头之外的温暖瞬间',
+      icon: Sun,
+      background: 'linear-gradient(112deg, #3d1e0f 0%, #b85c1e 47%, #f59e4b 100%)',
+      shadow: '0 24px 56px -28px rgba(150, 70, 20, 0.75)',
+      glowTop: 'rgba(255, 180, 100, 0.30)',
+      glowBottom: 'rgba(240, 140, 60, 0.24)',
+    },
+    {
+      id: 'event',
+      kicker: 'EVENT',
+      heading: '活动掠影',
+      subtitle: '活动现场的第一手记录',
+      icon: MapPin,
+      background: 'linear-gradient(112deg, #0c1f3f 0%, #1a4a8a 47%, #4da6ff 100%)',
+      shadow: '0 24px 56px -28px rgba(20, 55, 120, 0.75)',
+      glowTop: 'rgba(120, 180, 255, 0.28)',
+      glowBottom: 'rgba(70, 150, 240, 0.22)',
+    },
+    {
+      id: 'candid',
+      kicker: 'CANDID',
+      heading: '路透珍藏',
+      subtitle: '不经意的抓拍，最真实的模样',
+      icon: Eye,
+      background: 'linear-gradient(112deg, #2d1a0c 0%, #8b6914 47%, #e8b830 100%)',
+      shadow: '0 24px 56px -28px rgba(100, 70, 15, 0.75)',
+      glowTop: 'rgba(255, 210, 80, 0.30)',
+      glowBottom: 'rgba(220, 170, 40, 0.24)',
+    },
+  ]
+
+  // 按顺序给每张卡片分配照片：管理后台配置的 Hero 照片优先 → 艺人封面/照片列表兜底
+  const configuredUrls = heroCardUrls.value
+  const assignedPhotos = [
+    configuredUrls[0] || artistCover.value || photos.value[0]?.fileUrl || '',
+    configuredUrls[1] || photos.value[1]?.fileUrl || photos.value[0]?.fileUrl || '',
+    configuredUrls[2] || photos.value[2]?.fileUrl || photos.value[0]?.fileUrl || '',
+    configuredUrls[3] || photos.value[3]?.fileUrl || photos.value[0]?.fileUrl || '',
+    configuredUrls[4] || photos.value[4]?.fileUrl || photos.value[0]?.fileUrl || '',
+  ]
+
   const technicalNamePattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i
-  const addSlide = (imageUrl, title = '') => {
-    if (!imageUrl || seen.has(imageUrl)) return
-    seen.add(imageUrl)
-    const displayTitle = technicalNamePattern.test(title) ? '' : title
-    slides.push({ imageUrl, title: displayTitle })
-  }
-
-  addSlide(artistCover.value, '封面精选')
-  photos.value.slice(0, 8).forEach(photo => addSlide(photo.fileUrl, photo.title))
-
-  return slides.length ? slides.slice(0, 5) : [{ imageUrl: '', title: '' }]
+  return definitions.map((def, i) => {
+    const imageUrl = assignedPhotos[i]
+    const photo = photos.value[i] || null
+    const rawTitle = photo?.title || ''
+    return {
+      ...def,
+      imageUrl,
+      title: technicalNamePattern.test(rawTitle) ? '' : rawTitle,
+    }
+  })
 })
 
 const displayCategories = computed(() => {
@@ -140,13 +217,16 @@ const displayCategories = computed(() => {
 })
 const filteredPhotos = computed(() => {
   let list = photos.value
-  if (activeCategory.value !== 'all') list = list.filter(p => (p.categoryLabel || 'unknown') === activeCategory.value)
+  if (activeCategory.value !== 'all') list = list.filter(p => (p.categoryLabel || '未分类') === activeCategory.value)
   if (searchQuery.value.trim()) { const q = searchQuery.value.trim().toLowerCase(); list = list.filter(p => (p.title||'').toLowerCase().includes(q)) }
+  // 过滤掉已在 Hero 大卡片上展示的照片
+  const heroUrls = new Set(heroCardUrls.value.filter(Boolean))
+  if (heroUrls.size > 0) list = list.filter(p => !heroUrls.has(p.fileUrl))
   return list
 })
 const displayedPhotos = computed(() => filteredPhotos.value.slice(0, 24))
 function catClass(c) { const m = { 'roadshow':'bg-blue-50 text-blue-700','event':'bg-purple-50 text-purple-700','daily':'bg-green-50 text-green-700' }; return m[c] || 'bg-mangrove-50 text-mangrove-700' }
-function getCatThumbs(cat) { const list = cat === 'all' ? photos.value : photos.value.filter(p => (p.categoryLabel||'unknown') === cat); return list.slice(0, 3).map(p => p.fileUrl) }
+function getCatThumbs(cat) { const list = cat === 'all' ? photos.value : photos.value.filter(p => (p.categoryLabel||'未分类') === cat); return list.slice(0, 3).map(p => p.fileUrl) }
 
 async function loadData() {
   loading.value = true
@@ -166,6 +246,8 @@ async function loadData() {
     }
     const catRes = await fetch('/api/files/categories').catch(() => null)
     if (catRes && catRes.ok) { const cj = await catRes.json(); if (cj.data) backendCats.value = cj.data }
+    // 获取 Hero 卡片照片
+    await fetchHeroCardUrls()
     // 获取艺人封面
     const ar = await fetch('/api/public/artists').catch(() => null)
     if (ar && ar.ok) {
@@ -220,8 +302,6 @@ onMounted(loadData)
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 1.75rem;
-  background: linear-gradient(112deg, #123f2b 0%, #1b6842 47%, #62d17e 100%);
-  box-shadow: 0 24px 56px -28px rgba(15, 71, 43, 0.75);
 }
 
 .photo-hero-card::after {
@@ -229,7 +309,7 @@ onMounted(loadData)
   position: absolute;
   z-index: 1;
   inset: 0;
-  background: linear-gradient(90deg, rgba(9, 48, 30, 0.35), transparent 62%);
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.28), transparent 62%);
   pointer-events: none;
 }
 
@@ -256,7 +336,6 @@ onMounted(loadData)
   right: 21%;
   width: 25rem;
   height: 25rem;
-  background: rgba(138, 255, 164, 0.3);
 }
 
 .photo-hero-glow--bottom {
@@ -264,7 +343,6 @@ onMounted(loadData)
   left: 30%;
   width: 18rem;
   height: 18rem;
-  background: rgba(70, 202, 125, 0.25);
 }
 
 .photo-hero-copy {
