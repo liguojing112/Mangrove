@@ -1,20 +1,29 @@
 <template>
-  <main class="min-h-screen bg-gray-950 pb-20">
-    <section class="px-4 pb-10 pt-24 text-center sm:px-6">
-      <p class="mb-2 text-xs text-amber-400/60">LONG FORM ARCHIVE</p>
-      <h1 class="text-4xl font-light text-white">长视频展厅</h1>
-      <p class="mt-3 text-sm text-gray-500">舞台、访谈与完整影像记录</p>
-      <div class="mx-auto mt-6 h-px w-24 bg-gradient-to-r from-transparent via-amber-400 to-transparent"></div>
-      <label class="mx-auto mt-6 flex h-11 w-full max-w-md items-center rounded-full border border-gray-800 bg-gray-900 px-4 transition-colors focus-within:border-amber-500/50">
-        <Search class="h-4 w-4 shrink-0 text-gray-500" />
-        <input v-model="searchQuery" type="search" placeholder="搜索长视频" class="min-w-0 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-gray-600" />
-      </label>
+  <main class="min-h-screen bg-gray-50 pb-20">
+    <!-- Hero Video Player -->
+    <section class="pt-20 pb-6">
+      <div class="max-w-5xl mx-auto px-4">
+        <div v-if="heroVideo" class="relative overflow-hidden bg-black shadow-2xl border-2 border-gray-900">
+          <video :src="heroVideo.localVideoUrl" controls autoplay muted class="block w-full max-h-[70vh] bg-black" />
+          <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent px-6 pb-5 pt-12">
+            <p class="text-lg font-semibold text-white">{{ heroVideo.title || '精选长视频' }}</p>
+            <p v-if="heroVideo.description" class="text-sm text-gray-300 mt-1 line-clamp-1">{{ heroVideo.description }}</p>
+          </div>
+        </div>
+        <div v-else class="bg-gray-900 border-2 border-gray-900 flex items-center justify-center py-24 text-gray-400">
+          <Clapperboard class="w-12 h-12 mr-3" /><span class="text-sm">暂无精选视频</span>
+        </div>
+        <label class="mx-auto mt-5 flex h-10 w-full max-w-sm items-center rounded-full border border-gray-300 bg-white px-4 transition-colors focus-within:border-teal-400 shadow-sm">
+          <Search class="h-4 w-4 shrink-0 text-gray-400" />
+          <input v-model="searchQuery" type="search" placeholder="搜索长视频" class="min-w-0 flex-1 bg-transparent px-3 text-sm text-gray-700 outline-none placeholder:text-gray-400" />
+        </label>
+      </div>
     </section>
 
-    <div class="sticky top-16 z-40 border-b border-gray-800/50 bg-gray-950/80 backdrop-blur-md" @touchstart.stop @touchend.stop>
+    <div class="sticky top-16 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-md" @touchstart.stop @touchend.stop>
       <div class="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-3 sm:justify-center sm:px-6 lg:px-8 touch-pan-x">
         <button v-for="category in categories" :key="category.value" type="button" class="shrink-0 rounded-full border px-4 py-1.5 text-xs font-medium transition-all"
-          :class="activeCategory === category.value ? 'border-amber-500/30 bg-amber-500/20 text-amber-400' : 'border-gray-800 text-gray-500 hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400'"
+          :class="activeCategory === category.value ? 'border-teal-400 bg-teal-50 text-teal-600' : 'border-gray-200 text-gray-500 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-600'"
           @click="activeCategory = category.value">
           {{ category.label }} <span class="ml-1 opacity-60">{{ category.count }}</span>
         </button>
@@ -23,7 +32,7 @@
 
     <!-- 随机播放 -->
     <div class="flex justify-center py-6">
-      <button v-if="!randomVideo" type="button" class="flex items-center gap-2 rounded-full border border-amber-500/30 bg-gray-900 px-5 py-2.5 text-sm font-medium text-amber-400 shadow-sm transition-all hover:bg-amber-500/10 hover:shadow-md"
+      <button v-if="!randomVideo" type="button" class="flex items-center gap-2 rounded-full border border-teal-300 bg-white px-5 py-2.5 text-sm font-medium text-teal-600 shadow-sm transition-all hover:bg-teal-50 hover:shadow-md"
         @click="playRandom">
         <Shuffle class="w-4 h-4" /> 随机播放
       </button>
@@ -47,18 +56,18 @@
       <div class="mb-7 flex items-center gap-3">
         <span class="h-8 w-1 rounded-full bg-amber-400"></span>
         <div>
-          <h2 class="text-2xl font-light text-white">完整影像展厅</h2>
+          <h2 class="text-2xl font-light text-gray-800">完整影像展厅</h2>
           <p class="mt-0.5 text-xs text-gray-500">本地高清播放 · B站官方链接</p>
         </div>
         <span class="ml-auto rounded-full border border-amber-500/30 px-2.5 py-1 text-xs text-amber-400">{{ filteredVideos.length }} 部</span>
       </div>
 
       <div v-if="loading" class="py-24 text-center text-sm text-gray-500">加载中...</div>
-      <div v-else-if="filteredVideos.length === 0" class="rounded-2xl border border-gray-800 bg-gray-900 py-24 text-center text-sm text-gray-500">
-        <Clapperboard class="mx-auto mb-3 h-10 w-10 text-gray-700" />暂无长视频
+      <div v-else-if="filteredVideos.length === 0" class="rounded-2xl border border-gray-200 bg-white py-24 text-center text-sm text-gray-500">
+        <Clapperboard class="mx-auto mb-3 h-10 w-10 text-gray-300" />暂无长视频
       </div>
       <section v-else class="grid gap-6 md:grid-cols-2" aria-label="长视频列表">
-        <article v-for="video in filteredVideos" :key="video.id" class="group overflow-hidden rounded-2xl border border-gray-800 bg-gradient-to-br from-gray-800 to-gray-900 transition-all hover:border-amber-500/30">
+        <article v-for="video in filteredVideos" :key="video.id" class="group overflow-hidden rounded-3xl bg-white border-[4.5px] border-teal-200 shadow-sm hover:shadow-md transition-all">
           <button v-if="video.localVideoUrl" type="button" class="relative block aspect-video w-full overflow-hidden bg-gray-900" :aria-label="`播放 ${video.title}`" @click="playingVideo = video.localVideoUrl">
             <img v-if="video.coverUrl" :src="video.coverUrl" :alt="video.title" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
             <video v-else :src="video.localVideoUrl" muted preload="metadata" class="h-full w-full object-cover" @loadeddata="$event.target.currentTime=0.5"></video>
@@ -75,10 +84,10 @@
           <div class="p-5">
             <div class="flex items-start justify-between gap-4">
               <div class="min-w-0">
-                <h2 class="line-clamp-2 text-base font-medium leading-6 text-white">{{ video.title }}</h2>
+                <h2 class="line-clamp-2 text-base font-medium leading-6 text-gray-800">{{ video.title }}</h2>
                 <p class="mt-1 text-xs text-gray-500">{{ video.publishedDate || '小芒长视频' }}</p>
               </div>
-              <a v-if="video.bilibiliUrl" :href="video.bilibiliUrl" target="_blank" rel="noopener noreferrer" :aria-label="`在 B站打开 ${video.title}`" class="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-amber-500/30 px-2.5 text-xs font-medium text-amber-400 transition-colors hover:bg-amber-500/10">
+              <a v-if="video.bilibiliUrl" :href="video.bilibiliUrl" target="_blank" rel="noopener noreferrer" :aria-label="`在 B站打开 ${video.title}`" class="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-teal-300 px-2.5 text-xs font-medium text-teal-600 transition-colors hover:bg-teal-50">
                 <ExternalLink class="h-3.5 w-3.5" />B站
               </a>
             </div>
@@ -130,6 +139,11 @@ const filteredVideos = computed(() => videos.value.filter(video => {
   const searchMatch = !query || video.title.toLowerCase().includes(query) || (video.description || '').toLowerCase().includes(query)
   return categoryMatch && searchMatch
 }))
+
+const heroVideo = computed(() => {
+  const list = videos.value.filter(v => v.localVideoUrl)
+  return list[0] || null
+})
 
 onMounted(async () => {
   try {

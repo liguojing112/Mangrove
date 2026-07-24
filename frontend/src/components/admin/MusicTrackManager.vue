@@ -113,9 +113,14 @@
 
           <label class="block">
             <span class="mb-1 block text-sm text-gray-600">状态</span>
-            <select v-model.number="form.status" class="w-full border border-gray-200 px-3 py-2 text-sm focus:border-mangrove-500 focus:outline-none">
-              <option :value="1">上架</option><option :value="0">下架</option>
-            </select>
+            <template v-if="isSuperAdmin">
+              <select v-model.number="form.status" class="w-full border border-gray-200 px-3 py-2 text-sm focus:border-mangrove-500 focus:outline-none">
+                <option :value="1">上架</option><option :value="0">下架（待审核）</option>
+              </select>
+            </template>
+            <template v-else>
+              <div class="w-full border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-400 rounded">下架（待审核）— 需超级管理员审核后才会上架</div>
+            </template>
           </label>
         </div>
 
@@ -152,10 +157,13 @@ const uploadingCover = ref(false)
 const formError = ref('')
 const qqUrlInput = ref(null)
 const categories = computed(() => props.categories.length ? props.categories : ['单曲', '舞台', '翻唱'])
+const isSuperAdmin = JSON.parse(localStorage.getItem('mangrove_user') || '{}').role === 'SUPER_ADMIN'
 const form = reactive(emptyForm())
 
 function emptyForm() {
-  return { id: null, title: '', category: categories.value[0] || '单曲', localAudioUrl: '', qqMusicUrl: '', coverUrl: '', sortOrder: 0, status: 1 }
+  const userRole = JSON.parse(localStorage.getItem('mangrove_user') || '{}').role
+  const defaultStatus = userRole === 'SUPER_ADMIN' ? 1 : 0
+  return { id: null, title: '', category: categories.value[0] || '单曲', localAudioUrl: '', qqMusicUrl: '', coverUrl: '', sortOrder: 0, status: defaultStatus }
 }
 
 function token() { return localStorage.getItem('mangrove_token') || '' }

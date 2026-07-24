@@ -7,8 +7,16 @@
       <div class="flex flex-col md:flex-row gap-0 mb-6">
         <!-- 左侧：头像 + 签名 + 品牌 -->
         <div class="md:w-72 shrink-0 space-y-0">
-          <div class="aspect-square rounded-tl-xl bg-mangrove-50 border border-mangrove-200 flex flex-col items-center justify-center overflow-hidden">
-            <img v-if="artist.avatarUrl" :src="artist.avatarUrl" class="w-full h-full object-cover" />
+          <div class="aspect-square rounded-tl-xl bg-mangrove-50 border border-mangrove-200 overflow-hidden">
+            <div v-if="avatarPhotos.length > 0" class="w-full h-full relative">
+              <Swiper :modules="swiperModules" :slides-per-view="1" :loop="avatarPhotos.length > 1"
+                :autoplay="avatarPhotos.length > 1 ? { delay: 3000, disableOnInteraction: false } : false"
+                class="w-full h-full">
+                <SwiperSlide v-for="(url, i) in avatarPhotos" :key="i">
+                  <img :src="url" class="w-full h-full object-cover" />
+                </SwiperSlide>
+              </Swiper>
+            </div>
             <div v-else class="flex flex-col items-center">
               <User class="w-16 h-16 text-mangrove-300 mb-3" />
               <span class="text-xs text-mangrove-400">点击上传头像</span>
@@ -35,8 +43,8 @@
           </div>
           <div class="p-4 pb-1">
             <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">汉字名：</span><span class="text-gray-900 font-bold">{{ artist.name || '曲唱' }}</span></div>
-              <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">日文名：</span><span class="text-gray-800">曲唱</span></div>
+              <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">中文名：</span><span class="text-gray-800">曲唱</span></div>
+              <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">英文名：</span><span class="text-gray-800">candice</span></div>
               <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">罗马音：</span><span class="text-gray-800">QUCHANG</span></div>
               <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">性别：</span><span class="text-gray-800">女</span></div>
               <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">年龄：</span><span class="text-gray-800">18岁</span></div>
@@ -61,8 +69,21 @@
       </div>
 
       <!-- 详细介绍 -->
-      <div class="bg-mangrove-50 rounded-xl px-4 py-3 mb-4">
+      <div class="bg-mangrove-50 rounded-xl px-4 py-3 mb-4 flex items-center justify-between">
         <h2 class="text-mangrove-700 font-bold text-center">详细介绍</h2>
+        <button @click="showAskModal = true" class="text-sm text-mangrove-600 hover:text-mangrove-800 font-medium">💬 提问</button>
+      </div>
+
+      <!-- 提问弹窗 -->
+      <div v-if="showAskModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showAskModal = false">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+          <h3 class="text-lg font-bold text-gray-900 mb-4">向艺人提问</h3>
+          <textarea v-model="askText" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm resize-none h-32" placeholder="请输入你的问题..."></textarea>
+          <div class="flex justify-end gap-3 mt-4">
+            <button @click="showAskModal = false" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">取消</button>
+            <button @click.stop="submitAsk" @touchstart.stop.prevent="submitAsk" :disabled="!askText.trim()" class="px-4 py-2 text-sm font-medium text-white bg-mangrove-600 rounded-lg hover:bg-mangrove-700 disabled:opacity-40">提交</button>
+          </div>
+        </div>
       </div>
       <div class="space-y-3">
         <div
@@ -79,14 +100,57 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { User } from 'lucide-vue-next'
+import { Swiper, SwiperSlide } from 'swiper/vue'
+import { Autoplay } from 'swiper/modules'
+import 'swiper/css'
+
+const swiperModules = [Autoplay]
+
+const avatarPhotos = computed(() => {
+  const photos = []
+  if (artist.value.avatarImages && artist.value.avatarImages.length > 0) {
+    photos.push(...artist.value.avatarImages)
+  } else if (artist.value.avatarUrl) {
+    photos.push(artist.value.avatarUrl)
+  }
+  return photos
+})
 
 const route = useRoute()
 const artist = ref({ stageName: '' })
 const bioSections = ref([])
 const loading = ref(true)
+const showAskModal = ref(false)
+const askText = ref('')
+
+async function submitAsk() {
+  if (!askText.value.trim()) return
+  try {
+    const token = localStorage.getItem('mangrove_token')
+    const res = await fetch('/api/artist-bio/ask', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ question: askText.value })
+    })
+    const json = await res.json()
+    if (json.code === 200) {
+      bioSections.value.push(json.data)
+      askText.value = ''
+      showAskModal.value = false
+      alert('提问成功！')
+    } else {
+      alert('提交失败: ' + (json.msg || ''))
+    }
+  } catch (e) {
+    alert('提交失败: ' + e.message)
+  }
+}
 
 onMounted(async () => {
   try {

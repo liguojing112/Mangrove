@@ -48,13 +48,20 @@ public class LetterController {
     }
 
     @GetMapping("/{id}")
-    @Transactional
     public Result<LetterNote> detail(@PathVariable Long id) {
+        LetterNote letter = letterNoteRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND, "来信不存在"));
+        return Result.success(letter);
+    }
+
+    @PostMapping("/{id}/like")
+    @Transactional
+    public Result<String> like(@PathVariable Long id) {
         LetterNote letter = letterNoteRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND, "来信不存在"));
         letter.setLikes(letter.getLikes() + 1);
         letterNoteRepository.save(letter);
-        return Result.success(letter);
+        return Result.success("点赞成功");
     }
 
     @PostMapping

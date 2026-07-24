@@ -36,7 +36,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/public/**", "/api/birthday/artist/**", "/api/birthday/wishes/*", "/api/files/list", "/api/files/meta", "/api/files/categories", "/api/files/cover/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/public/**", "/api/birthday/artist/**", "/api/birthday/wishes/*", "/api/files/list", "/api/files/meta", "/api/files/categories", "/api/files/cover/**", "/api/files/upload", "/api/files/**").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/albums/**",
                                 "/api/music/**",
@@ -51,7 +51,8 @@ public class SecurityConfig {
                                 "/api/letter-categories/**",
                                 "/api/content",
                                 "/api/photo-categories",
-                                "/api/calendar/**").permitAll()
+                                "/api/calendar/**", "/api/tree/recent-checkins", "/api/tree/barrage").permitAll()
+                        .requestMatchers("/api/artist-bio/ask", "/api/artist-bio/my-questions").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/music/tracks/*/play").permitAll()
                         .requestMatchers("/api/super-admin/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/api/admin/**").authenticated()

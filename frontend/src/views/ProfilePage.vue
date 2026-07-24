@@ -1,5 +1,11 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+    <!-- Back Button -->
+    <div class="mb-4">
+      <router-link to="/" class="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-mangrove-600 transition-colors">
+        ← 返回首页
+      </router-link>
+    </div>
     <!-- Not Logged In -->
     <div v-if="!isLoggedIn" class="max-w-md mx-auto">
       <div class="card p-8 text-center">
@@ -16,9 +22,7 @@
       <!-- Profile Header -->
       <div class="card p-8 mb-8">
         <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-          <div class="w-24 h-24 rounded-full bg-mangrove-200 flex items-center justify-center flex-shrink-0">
-            <User class="w-12 h-12 text-mangrove-700" />
-          </div>
+          <UserAvatar :public-id="profile.publicId" :username="profile.nickname" size="xl" />
           <div class="text-center sm:text-left">
             <h1 class="text-xl font-bold text-gray-900 mb-1">{{ profile.nickname }}</h1>
             <p class="text-sm text-gray-600 mb-3">{{ profile.bio || '这个人很懒，什么都没写' }}</p>
@@ -209,6 +213,21 @@
         </div>
       </div>
 
+      <!-- 我的提问 -->
+      <div v-if="activeTab === 'questions'" class="mb-12">
+        <h2 class="font-semibold text-gray-900 mb-4">我的提问</h2>
+        <p class="text-xs text-gray-500 mb-3">你向艺人提出的问题，等管理员回答后会在艺人页面展示</p>
+
+        <div v-if="myQuestions.length === 0" class="py-8 text-center text-sm text-gray-400">还没有提过问</div>
+        <div v-else class="space-y-3">
+          <div v-for="q in myQuestions" :key="q.id" class="card p-4">
+            <p class="text-sm font-medium text-gray-800 mb-1">❓ {{ q.question }}</p>
+            <p v-if="q.answer" class="text-sm text-gray-600">💡 {{ q.answer }}</p>
+            <p v-else class="text-xs text-amber-500">等待回答中...</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Settings -->
       <h2 class="font-semibold text-gray-900 mb-4">设置</h2>
       <div class="card overflow-hidden">
@@ -244,6 +263,62 @@
       </div>
       <p v-if="favoriteDateSaved" class="mt-2 text-xs text-green-600 text-center">保存成功！首页日历将显示您的相伴天数</p>
     </div>
+    <!-- Edit Profile Modal -->
+    <div v-if="showEditProfile" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="showEditProfile = false">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">修改资料</h3>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">昵称</label>
+            <input v-model="editForm.nickname" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mangrove-500" placeholder="输入昵称" />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">个性签名</label>
+            <textarea v-model="editForm.bio" rows="3" class="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mangrove-500" placeholder="写点什么介绍自己..."></textarea>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">邮箱</label>
+            <input v-model="editForm.email" type="email" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mangrove-500" placeholder="可选" />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">手机号</label>
+            <input v-model="editForm.phone" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mangrove-500" placeholder="可选" />
+          </div>
+        </div>
+        <p v-if="editProfileMsg" class="text-xs mt-3" :class="editProfileMsg.startsWith('✓') ? 'text-green-600' : 'text-red-500'">{{ editProfileMsg }}</p>
+        <div class="flex justify-end gap-2 mt-5">
+          <button class="btn-secondary text-sm" @click="showEditProfile = false">取消</button>
+          <button class="btn-primary text-sm" :disabled="editProfileSaving" @click="saveProfile">{{ editProfileSaving ? '保存中...' : '保存' }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div v-if="showChangePassword" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="showChangePassword = false">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">账号安全</h3>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">当前密码</label>
+            <input v-model="pwdForm.oldPassword" type="password" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mangrove-500" placeholder="输入当前密码" />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">新密码</label>
+            <input v-model="pwdForm.newPassword" type="password" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mangrove-500" placeholder="至少6位" />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">确认新密码</label>
+            <input v-model="pwdForm.confirmPassword" type="password" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mangrove-500" placeholder="再次输入新密码" />
+          </div>
+        </div>
+        <p v-if="pwdMsg" class="text-xs mt-3" :class="pwdMsg.startsWith('✓') ? 'text-green-600' : 'text-red-500'">{{ pwdMsg }}</p>
+        <div class="flex justify-end gap-2 mt-5">
+          <button class="btn-secondary text-sm" @click="showChangePassword = false">取消</button>
+          <button class="btn-primary text-sm" :disabled="pwdSaving" @click="savePassword">{{ pwdSaving ? '修改中...' : '修改密码' }}</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -253,6 +328,7 @@ import { User, ChevronRight, Trash2, Edit2, Gift } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
 import { useRoute, useRouter } from 'vue-router'
 import ImageUploadField from '@/components/admin/ImageUploadField.vue'
+import UserAvatar from '@/components/UserAvatar.vue'
 
 const { isLoggedIn, currentUser, getToken, logout } = useAuth()
 const router = useRouter()
@@ -269,7 +345,8 @@ const contentTabs = [
   { key: 'works', label: '我的作品' },
   { key: 'notes', label: '记事簿' },
   { key: 'merchandise', label: '周边投稿' },
-  { key: 'lottery', label: '抽奖' }
+  { key: 'lottery', label: '抽奖' },
+  { key: 'questions', label: '我的提问' }
 ]
 const activeTab = ref('works')
 
@@ -478,10 +555,78 @@ async function deleteNote(id) {
 }
 
 function handleSetting(item) {
-  if (item === '退出登录') {
+  if (item === '修改资料') {
+    editForm.value = { nickname: profile.value.nickname || '', bio: profile.value.bio || '', email: profile.value.email || '', phone: profile.value.phone || '' }
+    editProfileMsg.value = ''
+    showEditProfile.value = true
+  } else if (item === '账号安全') {
+    pwdForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
+    pwdMsg.value = ''
+    showChangePassword.value = true
+  } else if (item === '退出登录') {
     logout()
     router.push('/')
   }
+}
+
+// ── 修改资料 ──
+const showEditProfile = ref(false)
+const editForm = ref({ nickname: '', bio: '', email: '', phone: '' })
+const editProfileSaving = ref(false)
+const editProfileMsg = ref('')
+
+async function saveProfile() {
+  if (!editForm.value.nickname.trim()) { editProfileMsg.value = '昵称不能为空'; return }
+  editProfileSaving.value = true
+  editProfileMsg.value = ''
+  try {
+    const res = await fetch('/api/auth/me', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify(editForm.value)
+    })
+    const json = await res.json()
+    if (json.code === 200) {
+      profile.value.nickname = editForm.value.nickname
+      profile.value.bio = editForm.value.bio
+      profile.value.email = editForm.value.email
+      profile.value.phone = editForm.value.phone
+      editProfileMsg.value = '✓ 资料已更新'
+      setTimeout(() => { showEditProfile.value = false }, 1500)
+    } else {
+      editProfileMsg.value = '✗ ' + (json.msg || '保存失败')
+    }
+  } catch (e) { editProfileMsg.value = '✗ 网络错误' }
+  finally { editProfileSaving.value = false }
+}
+
+// ── 账号安全 ──
+const showChangePassword = ref(false)
+const pwdForm = ref({ oldPassword: '', newPassword: '', confirmPassword: '' })
+const pwdSaving = ref(false)
+const pwdMsg = ref('')
+
+async function savePassword() {
+  if (!pwdForm.value.oldPassword) { pwdMsg.value = '请输入当前密码'; return }
+  if (!pwdForm.value.newPassword || pwdForm.value.newPassword.length < 6) { pwdMsg.value = '新密码至少6位'; return }
+  if (pwdForm.value.newPassword !== pwdForm.value.confirmPassword) { pwdMsg.value = '两次输入的新密码不一致'; return }
+  pwdSaving.value = true
+  pwdMsg.value = ''
+  try {
+    const res = await fetch('/api/auth/me/password', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ oldPassword: pwdForm.value.oldPassword, newPassword: pwdForm.value.newPassword })
+    })
+    const json = await res.json()
+    if (json.code === 200) {
+      pwdMsg.value = '✓ 密码已修改'
+      setTimeout(() => { showChangePassword.value = false }, 1500)
+    } else {
+      pwdMsg.value = '✗ ' + (json.msg || '修改失败')
+    }
+  } catch (e) { pwdMsg.value = '✗ 网络错误' }
+  finally { pwdSaving.value = false }
 }
 
 function statusClass(status) {
@@ -517,6 +662,15 @@ const lotterySaving = ref(false)
 const lotteryUploading = ref('')
 const lotteryError = ref('')
 const myLotteries = ref([])
+const myQuestions = ref([])
+
+async function fetchMyQuestions() {
+  try {
+    const res = await fetch('/api/artist-bio/my-questions', { headers: { Authorization: `Bearer ${getToken()}` } })
+    const json = await res.json()
+    if (json.code === 200) myQuestions.value = json.data || []
+  } catch {}
+}
 
 function emptyLotteryForm() { return { title: '', description: '', imageUrl: '', conditions: '', winnerCount: 1, startTime: '', endTime: '' } }
 
@@ -605,6 +759,7 @@ onMounted(() => {
     fetchNotes()
     fetchMyMerchandise()
     fetchMyLotteries()
+    fetchMyQuestions()
   }
 })
 </script>

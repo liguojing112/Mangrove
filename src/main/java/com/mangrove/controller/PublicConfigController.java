@@ -27,6 +27,13 @@ public class PublicConfigController {
         return Result.success(config);
     }
 
+    @GetMapping("/intro_animation_url")
+    public Result<String> getIntroAnimationUrl() {
+        return sysConfigRepository.findByConfigKey("intro_animation_url")
+                .map(c -> Result.success(c.getConfigValue()))
+                .orElse(Result.success(null));
+    }
+
     @GetMapping("/photos-hero-cards")
     public Result<List<String>> getPhotosHeroCards() {
         List<String> urls = sysConfigRepository.findByConfigKey("photos_hero_cards")

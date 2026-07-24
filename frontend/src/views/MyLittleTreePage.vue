@@ -63,7 +63,7 @@
         <div v-else class="absolute inset-0 bg-gradient-to-b from-mangrove-50 to-mangrove-100" />
         <div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-mangrove-200/50 to-transparent rounded-b-2xl" />
 
-        <div class="mango-tree-wrap relative z-10 mb-4 w-full h-full flex items-end justify-center">
+        <div class="relative z-10 mb-4 w-full h-full flex items-end justify-center">
           <img
             :src="treeImage"
             :alt="treeName || '芒果树'"
@@ -100,6 +100,19 @@
       </div>
       <p v-if="checkinMsg" class="text-center text-sm text-mangrove-600 mb-6">{{ checkinMsg }}</p>
       <p v-else class="text-center text-xs text-gray-400 mb-6">每日浇水可累积积分，解锁更多福利</p>
+
+      <!-- 帮别人打卡 -->
+      <div class="flex justify-center mb-6">
+        <div class="flex items-center gap-2 bg-gray-50 rounded-full px-4 py-2 border border-gray-200">
+          <input v-model="helpUsername" placeholder="输入用户名帮TA打卡" maxlength="20"
+            class="bg-transparent text-sm w-40 outline-none placeholder-gray-400" />
+          <button @click="doCheckinFor" :disabled="!helpUsername.trim()"
+            class="text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
+            :class="helpUsername.trim() ? 'bg-mangrove-500 text-white hover:bg-mangrove-600' : 'bg-gray-200 text-gray-400 cursor-not-allowed'">
+            帮TA打卡
+          </button>
+        </div>
+      </div>
 
       <!-- Stats -->
       <div class="grid grid-cols-4 gap-3 mb-10">
@@ -164,6 +177,30 @@
           </div>
         </div>
       </div>
+
+      <!-- 打卡积分排行榜 -->
+      <div class="mb-10">
+        <h2 class="font-semibold text-gray-900 mb-4">🏆 打卡积分排行榜</h2>
+        <div v-if="ranking.length === 0" class="text-center py-6 text-gray-400 text-sm">暂无排名数据</div>
+        <div v-else class="space-y-2">
+          <div v-for="(item, idx) in ranking" :key="idx"
+            class="card p-3 flex items-center gap-3"
+            :class="idx === 0 ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200' : ''">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
+              :class="idx === 0 ? 'bg-amber-400 text-white' : idx === 1 ? 'bg-gray-300 text-white' : idx === 2 ? 'bg-amber-600/60 text-white' : 'bg-gray-100 text-gray-500'">
+              {{ idx + 1 }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-800 truncate">{{ item.nickname || '匿名用户' }}</p>
+              <p class="text-[10px] text-gray-400">连续 {{ item.consecutiveDays }} 天 · 共签到 {{ item.totalCheckins }} 天</p>
+            </div>
+            <div class="text-right shrink-0">
+              <p class="text-sm font-bold text-amber-600">{{ item.totalPoints }} 积分</p>
+              <p class="text-[10px] text-gray-400">Lv.{{ item.level }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Watering Popup Modal -->
@@ -207,6 +244,8 @@ const littleTreeBgUrl = ref('')
 const journals = ref([])
 const showJournalForm = ref(false)
 const journalForm = ref({ title: '', content: '' })
+const ranking = ref([])
+const helpUsername = ref('')
 
 const STAGE_MAP = [
   { min: 1, max: 7, img: 'sapling', label: '光秃秃小苗' },
@@ -240,7 +279,7 @@ const treeStageIndex = computed(() => {
 })
 
 const treeStage = computed(() => STAGE_MAP[treeStageIndex.value])
-const treeImage = computed(() => `/assets/tree/${treeStage.value.img}.png`)
+const treeImage = computed(() => `/assets/tree/${treeStage.value.img}.png?v=2`)
 const treeName = computed(() => tree.value.treeName || '未命名小树')
 
 async function saveTreeName() {
@@ -267,7 +306,8 @@ async function fetchTree() {
     if (json.code === 200 && json.data) {
       tree.value = json.data
       const today = new Date().toISOString().split('T')[0]
-      checkedIn.value = json.data.lastCheckinAt === today
+      const lastCheckin = json.data.lastCheckinAt
+      checkedIn.value = lastCheckin && lastCheckin.startsWith(today)
     }
   } catch (e) {
     console.error('获取芒果树失败:', e)
@@ -300,9 +340,30 @@ async function doCheckin() {
       } else {
         checkinMsg.value = `💧 +10 EXP, +10 积分`
       }
+    } else {
+      checkinMsg.value = json.msg || '签到失败，请稍后重试'
     }
   } catch (e) {
     console.error('签到失败:', e)
+  }
+}
+
+async function doCheckinFor() {
+  if (!helpUsername.value.trim()) return
+  try {
+    const res = await fetch(`/api/tree/checkin-for/${encodeURIComponent(helpUsername.value.trim())}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    })
+    const json = await res.json()
+    if (json.code === 200) {
+      checkinMsg.value = `✅ ${json.data}`
+      helpUsername.value = ''
+    } else {
+      checkinMsg.value = `❌ ${json.msg || '帮打卡失败'}`
+    }
+  } catch (e) {
+    console.error('帮打卡失败:', e)
   }
 }
 
@@ -354,6 +415,18 @@ function formatTime(dateStr) {
   return new Date(dateStr).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
+async function fetchRanking() {
+  try {
+    const token = getToken()
+    if (!token) return
+    const res = await fetch('/api/tree/ranking', { headers: { 'Authorization': `Bearer ${token}` } })
+    const json = await res.json()
+    if (json.code === 200 && json.data) ranking.value = json.data
+  } catch (e) {
+    console.error('获取排行榜失败:', e)
+  }
+}
+
 onMounted(() => {
   fetch('/api/public/config/littletree_background_url')
     .then(r => r.json())
@@ -363,21 +436,12 @@ onMounted(() => {
   if (isLoggedIn.value) {
     fetchTree()
     fetchJournals()
+    fetchRanking()
   }
 })
 </script>
 
 <style scoped>
-.mango-tree-wrap {
-  animation: sway 4s ease-in-out infinite;
-  transform-origin: bottom center;
-}
-@keyframes sway {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(2deg); }
-  75% { transform: rotate(-2deg); }
-}
-
 .sparkle {
   position: absolute;
   animation: sparkle-float 3s ease-in-out infinite;

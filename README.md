@@ -1,4 +1,4 @@
-# 🥭 青芒纪 (Mangrove)
+# 🥭 Candice's Mango Ode (Mangrove)
 
 > 粉丝应援社区平台 —— 记录每一次心动 · 定格每一份美好
 
@@ -291,4 +291,4 @@ npm run dev
 
 ---
 
-> 🥭 **青芒纪** — 青涩的果实，终将长成参天大树。
+> 🥭 **Candice's Mango Ode** — 青涩的果实，终将长成参天大树。

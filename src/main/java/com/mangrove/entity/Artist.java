@@ -45,6 +45,10 @@ public class Artist {
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
 
+    @Convert(converter = com.mangrove.config.JsonListConverter.class)
+    @Column(name = "avatar_images", columnDefinition = "TEXT")
+    private java.util.List<String> avatarImages;
+
     @Column(name = "cover_url", length = 500)
     private String coverUrl;
 

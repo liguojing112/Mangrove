@@ -4,6 +4,7 @@ import com.mangrove.common.Result;
 import com.mangrove.common.ResultCode;
 import com.mangrove.common.exception.BusinessException;
 import com.mangrove.config.FileUploadConfig;
+import com.mangrove.service.VideoThumbnailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,7 @@ public class FileController {
     private final FileUploadConfig fileUploadConfig;
     private final com.mangrove.repository.SysConfigRepository sysConfigRepository;
     private final com.mangrove.repository.ArtistRepository artistRepository;
+    private final VideoThumbnailService videoThumbnailService;
 
     @PostMapping("/upload")
     public Result<Map<String, String>> upload(@RequestParam("file") MultipartFile file) {
@@ -57,6 +59,7 @@ public class FileController {
     }
 
     @DeleteMapping("/{filename}")
+    @Transactional
     public Result<Void> delete(@PathVariable String filename) {
         try {
             Path uploadDir = Paths.get(fileUploadConfig.getUploadDir()).toAbsolutePath().normalize();
@@ -68,9 +71,20 @@ public class FileController {
             }
 
             if (Files.deleteIfExists(filePath)) {
+                videoThumbnailService.deleteThumbnail(filename);
                 log.info("文件删除成功: {}", filename);
             } else {
                 throw new BusinessException(ResultCode.NOT_FOUND, "文件不存在");
+            }
+
+            // 同步删除数据库元数据
+            try (java.sql.Connection conn = getDbConnection()) {
+                java.sql.PreparedStatement ps = conn.prepareStatement("DELETE FROM file_meta WHERE filename=?");
+                ps.setString(1, filename);
+                ps.executeUpdate();
+                ps.close();
+            } catch (java.sql.SQLException e) {
+                log.warn("删除元数据失败: {}", filename, e);
             }
         } catch (IOException e) {
             log.error("文件删除失败: {}", filename, e);
@@ -103,6 +117,7 @@ public class FileController {
 
             List<Map<String, Object>> files = Files.list(uploadDir)
                 .filter(Files::isRegularFile)
+                .filter(path -> !path.getFileName().toString().endsWith(".poster.jpg"))
                 .filter(path -> !excludedUrls.contains("/uploads/" + path.getFileName().toString()))
                 .sorted((a, b) -> {
                     try { return Files.getLastModifiedTime(b).compareTo(Files.getLastModifiedTime(a)); }
@@ -113,10 +128,14 @@ public class FileController {
                     String filename = path.getFileName().toString();
                     fileInfo.put("filename", filename);
                     fileInfo.put("url", "/uploads/" + filename);
-                    fileInfo.put("fileType", filename.contains(".mp4") || filename.contains(".webm") ? "video/mp4" :
+                    fileInfo.put("fileType", videoThumbnailService.isVideoFilename(filename) ? "video/mp4" :
                         filename.endsWith(".mp3") ? "audio/mpeg" : filename.endsWith(".wav") ? "audio/wav" :
                         filename.endsWith(".flac") ? "audio/flac" : filename.endsWith(".aac") ? "audio/aac" :
                         filename.endsWith(".ogg") ? "audio/ogg" : filename.endsWith(".m4a") ? "audio/x-m4a" : "image/jpeg");
+                    String thumbnailUrl = videoThumbnailService.getThumbnailUrl(filename);
+                    if (thumbnailUrl != null) {
+                        fileInfo.put("thumbnailUrl", thumbnailUrl);
+                    }
                     try { fileInfo.put("fileSize", Files.size(path)); }
                     catch (IOException e) { fileInfo.put("fileSize", 0); }
                     try { fileInfo.put("createdAt", Files.getLastModifiedTime(path).toString()); }
@@ -217,8 +236,8 @@ public class FileController {
     @PostMapping("/meta")
     public Result<Void> saveMeta(@RequestBody Map<String, Object> body) {
         try (java.sql.Connection conn = getDbConnection()) {
-            String sql = "INSERT INTO file_meta (filename, display_name, seq_no, category, photo_date) VALUES (?,?,?,?,?) " +
-                "ON DUPLICATE KEY UPDATE display_name=VALUES(display_name), seq_no=VALUES(seq_no), category=VALUES(category), photo_date=VALUES(photo_date)";
+            String sql = "INSERT INTO file_meta (filename, display_name, seq_no, category, photo_date, status) VALUES (?,?,?,?,?,?) " +
+                "ON DUPLICATE KEY UPDATE display_name=VALUES(display_name), seq_no=VALUES(seq_no), category=VALUES(category), photo_date=VALUES(photo_date), status=VALUES(status)";
             java.sql.PreparedStatement ps = conn.prepareStatement(sql);
             ps.setString(1, (String) body.get("filename"));
             ps.setString(2, (String) body.getOrDefault("displayName", ""));
@@ -226,6 +245,8 @@ public class FileController {
             ps.setString(4, (String) body.getOrDefault("category", ""));
             String date = (String) body.get("photoDate");
             ps.setString(5, date != null && !date.isEmpty() ? date : null);
+            Object statusObj = body.get("status");
+            ps.setInt(6, statusObj != null ? ((Number) statusObj).intValue() : 1);
             ps.executeUpdate();
             ps.close();
             return Result.success();
@@ -236,22 +257,42 @@ public class FileController {
     }
 
     @GetMapping("/meta")
-    public Result<List<Map<String, Object>>> listMeta(@RequestParam(required = false) String category) {
+    public Result<List<Map<String, Object>>> listMeta(@RequestParam(required = false) String category,
+                                                        @RequestParam(required = false) Integer status) {
         try (java.sql.Connection conn = getDbConnection()) {
-            String sql = category != null ? "SELECT * FROM file_meta WHERE category=? ORDER BY seq_no, created_at DESC" 
-                : "SELECT * FROM file_meta ORDER BY seq_no, created_at DESC";
+            String baseSql = "SELECT * FROM file_meta";
+            List<String> conditions = new ArrayList<>();
+            List<Object> params = new ArrayList<>();
+            if (status != null) {
+                conditions.add("status = ?");
+                params.add(status);
+            }
+            if (category != null) {
+                conditions.add("category = ?");
+                params.add(category);
+            }
+            String where = conditions.isEmpty() ? "" : " WHERE " + String.join(" AND ", conditions);
+            String sql = baseSql + where + " ORDER BY seq_no, created_at DESC";
             java.sql.PreparedStatement ps = conn.prepareStatement(sql);
-            if (category != null) ps.setString(1, category);
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
             java.sql.ResultSet rs = ps.executeQuery();
             List<Map<String, Object>> list = new ArrayList<>();
             while (rs.next()) {
                 Map<String, Object> item = new LinkedHashMap<>();
-                item.put("filename", rs.getString("filename"));
+                String filename = rs.getString("filename");
+                item.put("filename", filename);
                 item.put("displayName", rs.getString("display_name"));
                 item.put("seqNo", rs.getInt("seq_no"));
                 item.put("category", rs.getString("category"));
                 item.put("photoDate", rs.getString("photo_date"));
-                item.put("url", "/uploads/" + rs.getString("filename"));
+                item.put("status", rs.getInt("status"));
+                item.put("url", "/uploads/" + filename);
+                String thumbnailUrl = videoThumbnailService.getThumbnailUrl(filename);
+                if (thumbnailUrl != null) {
+                    item.put("thumbnailUrl", thumbnailUrl);
+                }
                 list.add(item);
             }
             rs.close(); ps.close();
@@ -265,7 +306,22 @@ public class FileController {
     private java.sql.Connection getDbConnection() throws java.sql.SQLException {
         return java.sql.DriverManager.getConnection(
             "jdbc:mysql://localhost:3306/mangrove?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true",
-            "root", "root123");
+            "root", "mangrove_db_pass");
+    }
+
+    @PutMapping("/meta/{filename}/status")
+    public Result<Void> updateMetaStatus(@PathVariable String filename, @RequestParam Integer status) {
+        try (java.sql.Connection conn = getDbConnection()) {
+            java.sql.PreparedStatement ps = conn.prepareStatement("UPDATE file_meta SET status = ? WHERE filename = ?");
+            ps.setInt(1, status);
+            ps.setString(2, filename);
+            ps.executeUpdate();
+            ps.close();
+            return Result.success();
+        } catch (Exception e) {
+            log.error("更新元数据状态失败", e);
+            throw new BusinessException(ResultCode.INTERNAL_ERROR, "更新失败");
+        }
     }
 
     private String uploadFile(MultipartFile file, String originalFilename) {
@@ -301,6 +357,10 @@ public class FileController {
             Map<String, String> data = new LinkedHashMap<>();
             data.put("url", "/uploads/" + storedFilename);
             data.put("filename", originalFilename != null ? originalFilename : storedFilename);
+            String thumbnailUrl = videoThumbnailService.generateThumbnail(filePath);
+            if (thumbnailUrl != null) {
+                data.put("thumbnailUrl", thumbnailUrl);
+            }
             return data;
         } catch (IOException e) {
             log.error("文件保存失败", e);

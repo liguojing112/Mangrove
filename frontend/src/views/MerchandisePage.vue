@@ -1,25 +1,39 @@
 <template>
-  <div class="min-h-screen bg-gray-950">
-    <section class="pb-8 pt-24 text-center">
-      <p class="mb-2 text-xs tracking-[0.3em] text-amber-400/60">MANGO COLLECTION</p>
-      <h1 class="text-4xl font-light text-white">芒园周边</h1>
-      <p class="mt-2 text-sm text-gray-500">全站应援物料展示库</p>
-      <div class="mx-auto mt-4 h-px w-16 bg-gradient-to-r from-transparent via-amber-400 to-transparent"></div>
+  <div class="min-h-screen bg-gray-50">
+    <!-- Hero Card Showcase -->
+    <section class="pt-20 pb-6">
+      <div class="max-w-5xl mx-auto px-4">
+        <div v-if="heroCards.length > 0" class="grid grid-cols-4 md:grid-cols-5 gap-3">
+          <div v-for="(item, i) in heroCards" :key="i" class="group cursor-pointer"
+            @click="openDouble(item, '卡面', '卡背')">
+            <div class="relative aspect-[2/3] overflow-hidden rounded-xl border-[4.5px] border-pink-200 bg-white shadow-sm hover:shadow-md transition-all hover:border-pink-400">
+              <img v-if="item.frontImageUrl" :src="item.frontImageUrl" :alt="item.name" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+              <div v-else class="absolute inset-0 flex items-center justify-center text-3xl text-gray-300">🃏</div>
+              <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 p-2">
+                <p class="truncate text-[11px] font-medium text-white">{{ item.name }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="rounded-3xl bg-white border-[4.5px] border-pink-200 shadow-sm flex items-center justify-center py-20 text-gray-400">
+          <ImageIcon class="w-10 h-10 mr-2" /><span class="text-sm">暂无小卡展示</span>
+        </div>
+      </div>
     </section>
 
-    <div class="sticky top-16 z-40 border-b border-gray-800/50 bg-gray-950/80 backdrop-blur-md">
+    <div class="sticky top-16 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-md">
       <div class="mx-auto flex max-w-7xl flex-wrap justify-center gap-2 px-4 py-3 sm:px-6 lg:px-8">
-        <button v-for="section in sectionNav" :key="section.id" class="rounded-full border border-gray-800 px-4 py-1.5 text-xs font-medium text-gray-400 transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400" @click="scrollTo(section.id)">{{ section.label }}</button>
+        <button v-for="section in sectionNav" :key="section.id" class="rounded-full border border-gray-200 px-4 py-1.5 text-xs font-medium text-gray-500 transition-all hover:border-teal-300 hover:bg-teal-50 hover:text-teal-600" @click="scrollTo(section.id)">{{ section.label }}</button>
       </div>
     </div>
 
     <div class="mx-auto max-w-7xl space-y-20 px-4 py-12 sm:px-6 lg:px-8">
       <section id="s1" class="scroll-mt-28 space-y-6">
-        <header><h2 class="text-2xl font-light text-white">小卡合集</h2><p class="mt-1 text-sm text-gray-500">官方卡 · 饭制卡 · 随机卡 · 高清扫图</p></header>
-        <div class="flex flex-wrap gap-2"><button v-for="filter in cardFilters" :key="filter" class="rounded-full border px-3 py-1 text-xs font-medium transition-all" :class="cardFilter === filter ? 'border-amber-500/30 bg-amber-500/20 text-amber-400' : 'border-gray-800 text-gray-500 hover:text-gray-300'" @click="cardFilter = filter">{{ filter }}</button></div>
+        <header><h2 class="text-2xl font-light text-gray-800">小卡合集</h2><p class="mt-1 text-sm text-gray-500">官方卡 · 饭制卡 · 随机卡 · 高清扫图</p></header>
+        <div class="flex flex-wrap gap-2"><button v-for="filter in cardFilters" :key="filter" class="rounded-full border px-3 py-1 text-xs font-medium transition-all" :class="cardFilter === filter ? 'border-teal-400 bg-teal-50 text-teal-600' : 'border-gray-200 text-gray-500 hover:text-gray-700'" @click="cardFilter = filter">{{ filter }}</button></div>
         <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
           <button v-for="item in filteredCards" :key="item.id || item.name" type="button" class="group text-left" :aria-label="`查看小卡：${item.name}`" @click="openDouble(item, '卡面', '卡背')">
-            <div class="relative aspect-[2/3] overflow-hidden rounded-xl border border-gray-800 bg-gradient-to-br from-gray-800 to-gray-900 transition-all hover:border-amber-500/30">
+            <div class="relative aspect-[2/3] overflow-hidden rounded-xl border-[4.5px] border-teal-200 bg-white transition-all hover:border-teal-400 shadow-sm hover:shadow-md">
               <img v-if="item.frontImageUrl" :src="item.frontImageUrl" :alt="item.name" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
               <div v-else class="absolute inset-0 flex items-center justify-center text-2xl text-gray-700"><ImageIcon /></div>
               <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 p-3"><p class="truncate text-xs font-medium text-white">{{ item.name }}</p><div class="mt-1 flex items-center gap-2"><span :class="[rarityClass(item.rarity), 'rounded px-1.5 py-0.5 text-[10px]']">{{ item.rarity }}</span><span class="truncate text-[10px] text-gray-500">产出：{{ item.producerName }}</span></div></div>
@@ -29,10 +43,10 @@
       </section>
 
       <section id="s2" class="scroll-mt-28 space-y-6">
-        <header><h2 class="text-2xl font-light text-white">纸质周边</h2><p class="mt-1 text-sm text-gray-500">手幅 · 明信片 · 书签 · 贴纸 · 台历 · 海报</p></header>
+        <header><h2 class="text-2xl font-light text-gray-800">纸质周边</h2><p class="mt-1 text-sm text-gray-500">手幅 · 明信片 · 书签 · 贴纸 · 台历 · 海报</p></header>
         <div class="columns-2 gap-3 lg:columns-4" aria-label="纸质周边列表">
           <button v-for="item in paperItems" :key="item.id || item.name" type="button" class="group mb-3 block w-full break-inside-avoid text-left" @click="openDouble(item, '正面', '背面')">
-            <div class="relative overflow-hidden rounded-xl border border-gray-800 bg-gradient-to-br from-gray-800 to-gray-900 transition-all hover:border-amber-500/30">
+            <div class="relative overflow-hidden rounded-xl border-[4.5px] border-teal-200 bg-white transition-all hover:border-teal-400 shadow-sm hover:shadow-md">
               <img v-if="item.frontImageUrl" :src="item.frontImageUrl" :alt="`${item.name}正面`" class="block h-auto w-full transition-transform duration-300 group-hover:scale-105" />
               <div v-else class="flex aspect-[4/3] items-center justify-center text-gray-700"><ImageIcon /></div>
               <span class="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium text-gray-800">{{ item.type }}</span>
@@ -43,11 +57,11 @@
       </section>
 
       <section id="s3" class="scroll-mt-28 space-y-6">
-        <header><h2 class="text-2xl font-light text-white">实物应援</h2><p class="mt-1 text-sm text-gray-500">徽章 · 立牌 · 钥匙扣 · 透卡 · 收纳周边</p></header>
+        <header><h2 class="text-2xl font-light text-gray-800">实物应援</h2><p class="mt-1 text-sm text-gray-500">徽章 · 立牌 · 钥匙扣 · 透卡 · 收纳周边</p></header>
         <div class="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
           <button v-for="item in physicalItems" :key="item.id || item.name" type="button" class="group text-left" @click="selectedSingle = item">
-            <div class="rounded-xl border border-gray-800 bg-gray-900 p-4 transition-all hover:border-amber-500/30">
-              <div class="relative mb-3 aspect-square overflow-hidden rounded-lg bg-gray-800"><img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><div v-else class="flex h-full items-center justify-center text-gray-700"><ImageIcon /></div></div>
+            <div class="rounded-xl border-[4.5px] border-teal-200 bg-white p-4 shadow-sm hover:shadow-md transition-all hover:border-teal-400">
+              <div class="relative mb-3 aspect-square overflow-hidden rounded-lg bg-gray-100"><img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><div v-else class="flex h-full items-center justify-center text-gray-700"><ImageIcon /></div></div>
               <p class="truncate text-sm font-medium text-white">{{ item.name }}</p><div class="mt-1.5 flex items-center justify-between gap-2"><span class="inline-block rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-400">{{ item.type }}</span><span class="truncate text-[10px] text-gray-500">产出：{{ item.producerName }}</span></div>
             </div>
           </button>
@@ -55,12 +69,12 @@
       </section>
 
       <section id="s4" class="scroll-mt-28 space-y-6">
-        <header><h2 class="text-2xl font-light text-white">电子周边</h2><p class="mt-1 text-sm text-gray-500">壁纸 · 头像 · 锁屏 · 模板 · 表情包 · 可保存素材</p></header>
-        <div class="flex flex-wrap gap-2"><button v-for="filter in digitalFilters" :key="filter" class="rounded-full border px-3 py-1 text-xs transition-all" :class="digitalFilter === filter ? 'border-amber-500/30 bg-amber-500/20 text-amber-400' : 'border-gray-800 text-gray-500 hover:text-gray-300'" @click="digitalFilter = filter">{{ filter }}</button></div>
+        <header><h2 class="text-2xl font-light text-gray-800">电子周边</h2><p class="mt-1 text-sm text-gray-500">壁纸 · 头像 · 锁屏 · 模板 · 表情包 · 可保存素材</p></header>
+        <div class="flex flex-wrap gap-2"><button v-for="filter in digitalFilters" :key="filter" class="rounded-full border px-3 py-1 text-xs transition-all" :class="digitalFilter === filter ? 'border-teal-400 bg-teal-50 text-teal-600' : 'border-gray-200 text-gray-500 hover:text-gray-700'" @click="digitalFilter = filter">{{ filter }}</button></div>
         <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
           <button v-for="item in filteredDigitalItems" :key="item.id || item.name" type="button" class="group text-left" @click="selectedSingle = item">
-            <div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900 p-1 transition-all hover:border-amber-500/30">
-              <div class="relative aspect-[4/5] overflow-hidden rounded-lg bg-gray-800"><img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><div v-else class="flex h-full items-center justify-center text-gray-700"><ImageIcon /></div><span class="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[10px] text-white">{{ item.type }}</span></div>
+            <div class="overflow-hidden rounded-xl border-[4.5px] border-teal-200 bg-white p-1 shadow-sm hover:shadow-md transition-all hover:border-teal-400">
+              <div class="relative aspect-[4/5] overflow-hidden rounded-lg bg-gray-100"><img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><div v-else class="flex h-full items-center justify-center text-gray-400"><ImageIcon /></div><span class="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[10px] text-white">{{ item.type }}</span></div>
               <div class="px-2 py-2 text-center"><p class="truncate text-xs text-gray-400">{{ item.name }}</p><p class="mt-1 truncate text-[10px] text-gray-600">产出：{{ item.producerName }}</p></div>
             </div>
           </button>
@@ -68,42 +82,43 @@
       </section>
 
       <section id="s5" class="scroll-mt-28 space-y-6">
-        <header><h2 class="text-2xl font-light text-white">往期应援存档</h2><p class="mt-1 text-sm text-gray-500">生日应援 · 回归应援 · 线下活动 · 周年纪念</p></header>
+        <header><h2 class="text-2xl font-light text-gray-800">往期应援存档</h2><p class="mt-1 text-sm text-gray-500">生日应援 · 回归应援 · 线下活动 · 周年纪念</p></header>
         <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          <button v-for="item in archiveItems" :key="item.id || item.name" type="button" class="group overflow-hidden rounded-xl border border-gray-800 bg-gray-900 text-left transition-all hover:border-amber-500/30" @click="selectedSingle = item">
-            <div class="relative aspect-video bg-gray-800"><img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><div v-else class="flex h-full items-center justify-center text-gray-700"><ImageIcon /></div></div>
+          <button v-for="item in archiveItems" :key="item.id || item.name" type="button" class="group overflow-hidden rounded-3xl border-[4.5px] border-teal-200 bg-white shadow-sm hover:shadow-md transition-all text-left hover:border-teal-400" @click="selectedSingle = item">
+            <div class="relative aspect-video bg-gray-100"><img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><div v-else class="flex h-full items-center justify-center text-gray-400"><ImageIcon /></div></div>
             <div class="p-4"><p class="text-xs text-amber-400">{{ item.date || item.type }}</p><h3 class="mt-1 truncate text-base font-medium text-white">{{ item.name }}</h3><p class="mt-1 text-[10px] text-gray-600">产出：{{ item.producerName }}</p><p v-if="item.description" class="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">{{ item.description }}</p></div>
           </button>
         </div>
       </section>
 
       <section id="s6" class="scroll-mt-28 space-y-8">
-        <header class="flex flex-wrap items-end justify-between gap-4"><div><h2 class="text-2xl font-light text-white">产出周边套装</h2><p class="mt-1 text-sm text-gray-500">周边套装</p></div><router-link v-if="isLoggedIn" to="/profile?tab=merchandise&type=BUNDLE" class="rounded-lg border border-amber-500/30 px-4 py-2 text-xs font-medium text-amber-400 transition-colors hover:bg-amber-500/10">上传套装</router-link></header>
+        <header class="flex flex-wrap items-end justify-between gap-4"><div><h2 class="text-2xl font-light text-gray-800">产出周边套装</h2><p class="mt-1 text-sm text-gray-500">周边套装</p></div><router-link v-if="isLoggedIn" to="/profile?tab=merchandise&type=BUNDLE" class="rounded-lg border border-amber-500/30 px-4 py-2 text-xs font-medium text-amber-400 transition-colors hover:bg-amber-500/10">上传套装</router-link></header>
         <div v-if="bundleCreators.length" class="grid grid-cols-3 gap-x-4 gap-y-8 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
           <router-link v-for="creator in bundleCreators" :key="creator.publicId" :to="`/merchandise/producer/${creator.publicId}`" class="group min-w-0 text-center">
             <div class="mx-auto flex aspect-square w-full max-w-24 items-center justify-center rounded-full border text-lg font-semibold transition-transform duration-200 group-hover:-translate-y-1" :style="avatarStyle(creator.publicId)">{{ avatarText(creator.username) }}</div>
-            <p class="mt-3 truncate text-sm font-medium text-white">{{ creator.username }}</p>
+            <p class="mt-3 truncate text-sm font-medium text-gray-800">{{ creator.username }}</p>
             <p class="mt-1 truncate font-mono text-[10px] text-gray-600">{{ creator.publicId }}</p>
             <p class="mt-1 text-[10px] text-gray-500">{{ creator.bundleCount }} 套作品</p>
           </router-link>
         </div>
-        <div v-else class="border-y border-gray-800 py-16 text-center text-sm text-gray-600"><p>暂无套装产出</p><router-link v-if="isLoggedIn" to="/profile?tab=merchandise&type=BUNDLE" class="mt-4 inline-block text-amber-400 hover:text-amber-300">成为第一位产出者</router-link><router-link v-else to="/login" class="mt-4 inline-block text-amber-400 hover:text-amber-300">登录后上传套装</router-link></div>
+        <div v-else class="border-y border-gray-200 py-16 text-center text-sm text-gray-500"><p>暂无套装产出</p><router-link v-if="isLoggedIn" to="/profile?tab=merchandise&type=BUNDLE" class="mt-4 inline-block text-amber-400 hover:text-amber-300">成为第一位产出者</router-link><router-link v-else to="/login" class="mt-4 inline-block text-amber-400 hover:text-amber-300">登录后上传套装</router-link></div>
       </section>
 
       <section id="s7" class="scroll-mt-28 space-y-6">
-        <header><h2 class="text-2xl font-light text-white">抽奖活动</h2><p class="mt-1 text-sm text-gray-500">参与抽奖，赢取小卡和周边</p></header>
+        <header><h2 class="text-2xl font-light text-gray-800">抽奖活动</h2><p class="mt-1 text-sm text-gray-500">参与抽奖，赢取小卡和周边</p></header>
         <div v-if="lotteries.length" class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          <div v-for="lottery in lotteries" :key="lottery.id" class="rounded-xl border border-gray-800 bg-gray-900 p-5 transition-all hover:border-amber-500/30">
+          <div v-for="lottery in lotteries" :key="lottery.id" class="rounded-3xl border-[4.5px] border-teal-200 bg-white shadow-sm hover:shadow-md transition-all p-5">
             <div class="flex items-start justify-between mb-3">
               <span class="px-2 py-0.5 rounded-full text-[10px] font-medium" :class="lotteryStatusClass(lottery.status)">{{ lotteryStatusLabel(lottery.status) }}</span>
-              <span class="text-[10px] text-gray-600">{{ lottery.entryCount }} 人参与</span>
+              <span class="text-[10px] text-gray-500">{{ lottery.entryCount }} 人参与</span>
             </div>
-            <h3 class="text-base font-medium text-white mb-1">{{ lottery.title }}</h3>
+            <h3 class="text-base font-medium text-gray-800 mb-1">{{ lottery.title }}</h3>
             <p v-if="lottery.description" class="text-xs text-gray-500 line-clamp-2 mb-3">{{ lottery.description }}</p>
             <div class="space-y-1.5 mb-4">
               <div class="flex items-center gap-2 text-xs text-gray-400">
                 <Gift class="w-3.5 h-3.5 text-amber-400/70" />
                 <span>奖品：{{ lottery.prizeDescription }}</span>
+                <button v-if="lottery.imageUrl" type="button" class="ml-auto rounded-full border border-amber-500/30 px-2 py-0.5 text-[10px] text-amber-400 transition-colors hover:bg-amber-500/10" @click.stop="showPrize = lottery">展示奖品</button>
               </div>
               <div class="flex items-center gap-2 text-xs text-gray-500">
                 <Clock class="w-3.5 h-3.5" />
@@ -112,6 +127,10 @@
               <div class="flex items-center gap-2 text-xs text-gray-500">
                 <Users class="w-3.5 h-3.5" />
                 <span>{{ eligibleLabel(lottery.eligibleRole) }} · {{ lottery.winnerCount }} 个中奖名额</span>
+              </div>
+              <div v-if="lottery.conditions" class="flex items-start gap-2 text-xs text-gray-500">
+                <CheckCircle class="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-400/70" />
+                <span>{{ lottery.conditions }}</span>
               </div>
             </div>
             <!-- Winners display -->
@@ -132,7 +151,7 @@
             <router-link v-else to="/login" class="block w-full rounded-lg border border-gray-700 py-2 text-center text-xs text-gray-500 transition-colors hover:border-gray-600 hover:text-gray-400">登录后参与</router-link>
           </div>
         </div>
-        <div v-else class="border-y border-gray-800 py-16 text-center text-sm text-gray-600">暂无抽奖活动</div>
+        <div v-else class="border-y border-gray-200 py-16 text-center text-sm text-gray-500">暂无抽奖活动</div>
       </section>
     </div>
 
@@ -154,12 +173,26 @@
         <p v-if="selectedSingle.description" class="mt-4 text-sm leading-6 text-gray-500">{{ selectedSingle.description }}</p>
       </div>
     </div>
+    <!-- 奖品展示弹窗 -->
+    <div v-if="showPrize" class="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm" @click.self="showPrize = null">
+      <div class="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-gray-800 bg-gray-950 p-5 shadow-2xl">
+        <div class="mb-4 flex items-start justify-between">
+          <div>
+            <p class="text-xs text-amber-400">奖品图片</p>
+            <h2 class="mt-1 text-xl font-light text-white">{{ showPrize.title }}</h2>
+          </div>
+          <button type="button" class="p-2 text-gray-500 hover:text-white" @click="showPrize = null"><X class="h-5 w-5" /></button>
+        </div>
+        <img v-if="showPrize.imageUrl" :src="showPrize.imageUrl" :alt="showPrize.title" class="max-h-[70vh] w-full rounded-lg bg-gray-900 object-contain" />
+        <p v-if="showPrize.description" class="mt-4 text-sm leading-6 text-gray-500">{{ showPrize.description }}</p>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { Clock, Gift, ImageIcon, Users, X } from 'lucide-vue-next'
+import { Clock, Gift, ImageIcon, Users, X, CheckCircle } from 'lucide-vue-next'
 
 const sectionNav = [{ id: 's1', label: '小卡合集' }, { id: 's2', label: '纸质周边' }, { id: 's3', label: '实物应援' }, { id: 's4', label: '电子周边' }, { id: 's5', label: '往期存档' }, { id: 's6', label: '周边套装' }, { id: 's7', label: '抽奖活动' }]
 const merchandise = ref([])
@@ -168,18 +201,13 @@ const cardFilter = ref('全部')
 const digitalFilter = ref('全部')
 const selectedDouble = ref(null)
 const selectedSingle = ref(null)
-const placeholders = {
-  PHOTOCARD: [{ name: '林夏限定小卡', rarity: 'LEGENDARY', series: '五月花期', type: '官方卡' }],
-  HAND_BANNER: [{ name: '绿野演唱会手幅', type: '手幅' }, { name: '周年纪念明信片', type: '明信片' }, { name: '角色书签套装', type: '书签' }, { name: '主题贴纸包', type: '贴纸' }],
-  PHYSICAL: [{ name: '金属徽章套装', type: '徽章' }, { name: '亚克力立牌', type: '立牌' }, { name: '钥匙扣套装', type: '钥匙扣' }, { name: '透明卡套', type: '透卡' }],
-  DIGITAL: [{ name: '绿野主题壁纸', type: '壁纸' }, { name: '小芒头像组', type: '头像' }, { name: '花雨锁屏', type: '锁屏' }, { name: '聊天表情包', type: '表情包' }],
-  ARCHIVE: [{ name: '小芒生日应援', type: '生日应援', date: '2026年5月', description: '生日应援活动物料存档。' }],
-}
+const showPrize = ref(null)
 
 function scrollTo(id) { document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }) }
-function byCategory(category) { const result = merchandise.value.filter(item => item.category === category); return result.length ? result : placeholders[category] }
+function byCategory(category) { return merchandise.value.filter(item => item.category === category) }
 function normalize(item) { return { id: item.id, name: item.name, type: item.subCategory || '', rarity: item.rarity || 'COMMON', series: item.tags || item.subCategory || '', description: item.description || '', date: item.publishDate || '', frontImageUrl: item.cardFrontImageUrl || item.thumbnailUrl || item.highResImageUrl || '', backImageUrl: item.cardBackImageUrl || '', imageUrl: item.highResImageUrl || item.thumbnailUrl || item.cardFrontImageUrl || '', bundleImageUrls: item.bundleImageUrls || [], producerName: item.producerName || '站点', producerUsername: item.producerUsername || item.producerName || '站点', producerPublicId: item.producerPublicId || `SITE-${item.producerId || 0}`, producerRole: item.producerRole || '', category: item.category } }
 const cards = computed(() => byCategory('PHOTOCARD').map(normalize))
+const heroCards = computed(() => cards.value.slice(0, 5))
 const paperItems = computed(() => byCategory('HAND_BANNER').map(normalize))
 const physicalItems = computed(() => byCategory('PHYSICAL').map(normalize))
 const digitalItems = computed(() => byCategory('DIGITAL').map(normalize))

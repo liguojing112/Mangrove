@@ -13,6 +13,11 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findByTargetTypeAndTargetIdAndStatusOrderByCreatedAtDesc(
             Comment.TargetType type, Long targetId, Integer status, Pageable pageable);
 
+    List<Comment> findByTargetTypeAndTargetIdAndStatusAndParentIsNullOrderByCreatedAtDesc(
+            Comment.TargetType type, Long targetId, Integer status, Pageable pageable);
+
+    long countByTargetTypeAndTargetIdAndStatusAndParentIsNull(Comment.TargetType type, Long targetId, Integer status);
+
     List<Comment> findByParentId(Long parentId);
 
     long countByTargetTypeAndTargetIdAndStatus(Comment.TargetType type, Long targetId, Integer status);

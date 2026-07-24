@@ -4,14 +4,42 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="青芒纪 - 记录每一份热爱" />
+    <meta name="description" content="Candice's Mango Ode - 记录每一份热爱" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
-    <title>青芒纪</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" media="print" onload="this.media='all'" />
+    <title>Candice's Mango Ode</title>
+    <style>
+      /* 首屏加载动画，JS bundle 加载完即被 Vue 替换 */
+      #app-loading {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: #0f172a;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      #app-loading .mango {
+        font-size: 64px;
+        animation: mango-bounce 1s ease-in-out infinite;
+      }
+      #app-loading .text {
+        margin-top: 16px;
+        color: rgba(255,255,255,0.6);
+        font-size: 14px;
+        letter-spacing: 0.1em;
+      }
+      @keyframes mango-bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-12px); }
+      }
+    </style>
   </head>
   <body class="bg-gray-50 text-gray-800 antialiased">
-    <div id="app"></div>
+    <div id="app">
+      <div id="app-loading">
+        <span class="mango">🥭</span>
+        <span class="text">CANDICE'S MANGO ODE</span>
+      </div>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

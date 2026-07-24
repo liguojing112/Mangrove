@@ -3,10 +3,13 @@ import { reactive, computed, readonly } from 'vue'
 const TOKEN_KEY = 'mangrove_token'
 const USER_KEY = 'mangrove_user'
 
-// 全局单例状态
+// 鉴权信息需要和路由守卫、管理后台的请求逻辑使用同一存储。
+// localStorage 也能避免 iOS 微信浏览器在页面上下文切换时丢失会话。
+function getStore() { return localStorage }
+
 const state = reactive({
-  token: localStorage.getItem(TOKEN_KEY) || null,
-  user: JSON.parse(localStorage.getItem(USER_KEY) || 'null'),
+  token: getStore().getItem(TOKEN_KEY) || null,
+  user: JSON.parse(getStore().getItem(USER_KEY) || 'null'),
   loading: false,
   error: null
 })
@@ -19,15 +22,15 @@ export function useAuth() {
   function saveAuth(token, user) {
     state.token = token
     state.user = user
-    localStorage.setItem(TOKEN_KEY, token)
-    localStorage.setItem(USER_KEY, JSON.stringify(user))
+    getStore().setItem(TOKEN_KEY, token)
+    getStore().setItem(USER_KEY, JSON.stringify(user))
   }
 
   function clearAuth() {
     state.token = null
     state.user = null
-    localStorage.removeItem(TOKEN_KEY)
-    localStorage.removeItem(USER_KEY)
+    getStore().removeItem(TOKEN_KEY)
+    getStore().removeItem(USER_KEY)
   }
 
   async function login(username, password) {
@@ -104,7 +107,7 @@ export function useAuth() {
           nickname: json.data.nickname,
           role: json.data.role
         }
-        localStorage.setItem(USER_KEY, JSON.stringify(state.user))
+        getStore().setItem(USER_KEY, JSON.stringify(state.user))
         return true
       } else {
         clearAuth()

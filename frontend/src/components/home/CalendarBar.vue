@@ -12,7 +12,7 @@
 
       <template v-else>
         <div class="space-y-4">
-          <!-- 第1行：距离生日还有（倒计时） -->
+          <!-- 距离生日还有 -->
           <countdown-row
             v-if="targetCountdown.target"
             label="距离生日还有"
@@ -22,41 +22,41 @@
             :s="targetCountdown.seconds"
           />
 
-          <!-- 第2行：相伴之日（已登录） -->
+          <!-- 相伴之日（已登录） -->
           <countdown-row
-            v-if="isLoggedIn && timeSinceCountdowns[0]"
-            label="相伴之日"
-            :d="timeSinceCountdowns[0].days"
-            :h="timeSinceCountdowns[0].hours"
-            :m="timeSinceCountdowns[0].minutes"
-            :s="timeSinceCountdowns[0].seconds"
+            v-if="isLoggedIn && counts.loveDays"
+            :label="'相伴之日'"
+            :d="counts.loveDays.days"
+            :h="counts.loveDays.hours"
+            :m="counts.loveDays.minutes"
+            :s="counts.loveDays.seconds"
             link="/profile"
             title="点击去个人中心设置喜欢日期"
           />
 
-          <!-- 第3行：出道纪念日 -->
+          <!-- 出道纪念日 -->
           <countdown-row
-            v-if="timeSinceCountdowns[1]"
+            v-if="counts.debutDays"
             label="出道纪念日"
-            :d="timeSinceCountdowns[1].days"
-            :h="timeSinceCountdowns[1].hours"
-            :m="timeSinceCountdowns[1].minutes"
-            :s="timeSinceCountdowns[1].seconds"
+            :d="counts.debutDays.days"
+            :h="counts.debutDays.hours"
+            :m="counts.debutDays.minutes"
+            :s="counts.debutDays.seconds"
           />
 
-          <!-- 第4行：诞生天数 -->
+          <!-- 诞生天数 -->
           <countdown-row
-            v-if="timeSinceCountdowns[2]"
+            v-if="counts.birthDays"
             label="诞生天数"
-            :d="timeSinceCountdowns[2].days"
-            :h="timeSinceCountdowns[2].hours"
-            :m="timeSinceCountdowns[2].minutes"
-            :s="timeSinceCountdowns[2].seconds"
+            :d="counts.birthDays.days"
+            :h="counts.birthDays.hours"
+            :m="counts.birthDays.minutes"
+            :s="counts.birthDays.seconds"
           />
         </div>
 
         <!-- 未登录提示 -->
-        <div v-if="!isLoggedIn && timeSinceCountdowns.length === 0" class="text-center mt-4 pt-4 border-t border-white/10">
+        <div v-if="!isLoggedIn && !counts.loveDays && !counts.debutDays && !counts.birthDays" class="text-center mt-4 pt-4 border-t border-white/10">
           <router-link to="/profile" class="text-sm text-white/50 hover:text-white/80 transition-colors">
             登录查看你的相伴之日 →
           </router-link>
@@ -127,7 +127,11 @@ const bgStyle = {}
 const targetCountdown = ref({ target: null, days: 0, hours: 0, minutes: 0, seconds: 0 })
 
 // 从过去某个日期开始计时（相伴/出道/存活）
-const timeSinceCountdowns = ref([])
+const counts = ref({
+  loveDays: null,
+  debutDays: null,
+  birthDays: null
+})
 
 let timer = null
 
@@ -163,9 +167,15 @@ function tick() {
   if (targetCountdown.value.target) {
     Object.assign(targetCountdown.value, calcTimeUntil(targetCountdown.value.target))
   }
-  timeSinceCountdowns.value.forEach(item => {
-    Object.assign(item, calcTimeSince(item.start))
-  })
+  if (counts.value.loveDays) {
+    Object.assign(counts.value.loveDays, calcTimeSince(counts.value.loveDays.start))
+  }
+  if (counts.value.debutDays) {
+    Object.assign(counts.value.debutDays, calcTimeSince(counts.value.debutDays.start))
+  }
+  if (counts.value.birthDays) {
+    Object.assign(counts.value.birthDays, calcTimeSince(counts.value.birthDays.start))
+  }
 }
 
 onMounted(async () => {
@@ -176,16 +186,15 @@ onMounted(async () => {
     const res = await fetch(`/api/calendar/days?artistId=${props.artistId}`, { headers })
     const json = await res.json()
     if (json.code === 200) {
-      const d = json.data
-      if (d.nextBirthdayDate) {
-        targetCountdown.value.target = d.nextBirthdayDate
+        const d = json.data
+        if (d.nextBirthdayDate) {
+          targetCountdown.value.target = d.nextBirthdayDate
+        }
+        const c = counts.value
+        if (d.loveStartDate) c.loveDays = { start: d.loveStartDate, days: 0, hours: 0, minutes: 0, seconds: 0 }
+        if (d.debutDate) c.debutDays = { start: d.debutDate, days: 0, hours: 0, minutes: 0, seconds: 0 }
+        if (d.birthDate) c.birthDays = { start: d.birthDate, days: 0, hours: 0, minutes: 0, seconds: 0 }
       }
-      const since = []
-      if (d.loveStartDate) since.push({ start: d.loveStartDate })
-      if (d.debutDate) since.push({ start: d.debutDate })
-      if (d.birthDate) since.push({ start: d.birthDate })
-      timeSinceCountdowns.value = since
-    }
   } catch {} finally {
     loading.value = false
   }

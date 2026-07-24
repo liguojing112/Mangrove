@@ -399,23 +399,36 @@ function closeCategoryForm() {
 
 async function saveCategory() {
   try {
+    const token = getToken()
+    if (!token) {
+      alert('请先登录管理后台')
+      return
+    }
     const url = editingCategory.value ? `/api/admin/letter-categories/${editingCategory.value.id}` : '/api/admin/letter-categories'
     const method = editingCategory.value ? 'PUT' : 'POST'
     const res = await fetch(url, {
       method,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getToken()}`
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(categoryForm.value)
     })
+    if (res.status === 401) {
+      alert('登录已过期，请重新登录')
+      window.location.href = '/admin/login'
+      return
+    }
     const json = await res.json()
     if (json.code === 200) {
       closeCategoryForm()
       await fetchCategories()
+    } else {
+      alert('保存失败: ' + (json.msg || '未知错误'))
     }
   } catch (e) {
     console.error('保存分类失败:', e)
+    alert('保存失败，请检查网络')
   }
 }
 

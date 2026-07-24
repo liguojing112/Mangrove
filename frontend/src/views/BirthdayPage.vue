@@ -331,7 +331,7 @@
          FOOTER
     ═══════════════════════════════════════════════════════════════ -->
     <footer class="py-12 text-center border-t border-gray-800/50">
-      <p class="text-gray-600 text-sm">© 青芒纪 · 生日特别企划</p>
+      <p class="text-gray-600 text-sm">© Candice's Mango Ode · 生日特别企划</p>
       <p class="text-gray-700 text-xs mt-2">Made with 💚 by 站姐</p>
     </footer>
   </div>
@@ -395,7 +395,7 @@ const wishes = ref([
     liked: false
   },
   {
-    author: '青芒纪守护者',
+    author: "Candice's Mango Ode守护者",
     avatarBg: 'linear-gradient(135deg, #10b981, #059669)',
     avatarColor: '#fff',
     time: '5 小时前',

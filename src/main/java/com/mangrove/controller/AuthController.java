@@ -13,6 +13,7 @@ import com.mangrove.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -25,6 +26,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final SysUserRepository sysUserRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/register")
     public Result<LoginResponse> register(@Valid @RequestBody RegisterRequest req) {
@@ -43,6 +45,58 @@ public class AuthController {
                 .orElseThrow(() -> new BusinessException(ResultCode.UNAUTHORIZED, "用户不存在"))
                 .getId();
         return Result.success(authService.getCurrentUser(userId));
+    }
+
+    @PutMapping("/me")
+    public Result<Void> updateProfile(@RequestBody Map<String, String> body, Authentication authentication) {
+        String username = authentication.getName();
+        SysUser user = sysUserRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ResultCode.UNAUTHORIZED, "用户不存在"));
+
+        if (body.containsKey("nickname")) {
+            String nickname = body.get("nickname");
+            if (nickname != null && !nickname.isBlank()) {
+                user.setNickname(nickname.trim().substring(0, Math.min(nickname.trim().length(), 30)));
+            }
+        }
+        if (body.containsKey("bio")) {
+            user.setBio(body.get("bio"));
+        }
+        if (body.containsKey("email")) {
+            String email = body.get("email");
+            user.setEmail((email != null && !email.isBlank()) ? email.trim() : null);
+        }
+        if (body.containsKey("phone")) {
+            String phone = body.get("phone");
+            user.setPhone((phone != null && !phone.isBlank()) ? phone.trim() : null);
+        }
+
+        sysUserRepository.save(user);
+        return Result.success(null);
+    }
+
+    @PutMapping("/me/password")
+    public Result<Void> changePassword(@RequestBody Map<String, String> body, Authentication authentication) {
+        String username = authentication.getName();
+        SysUser user = sysUserRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ResultCode.UNAUTHORIZED, "用户不存在"));
+
+        String oldPassword = body.get("oldPassword");
+        String newPassword = body.get("newPassword");
+
+        if (oldPassword == null || oldPassword.isBlank()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "请输入当前密码");
+        }
+        if (newPassword == null || newPassword.isBlank() || newPassword.length() < 6) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "新密码不能为空且至少6位");
+        }
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "当前密码不正确");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        sysUserRepository.save(user);
+        return Result.success(null);
     }
 
     @PutMapping("/me/favorite-date")

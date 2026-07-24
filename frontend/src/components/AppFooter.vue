@@ -11,7 +11,7 @@
         <span>联系我们</span>
       </div>
       <p class="text-sm text-gray-400">
-        &copy; 2026 青芒纪 Mangrove. All rights reserved.
+        &copy; 2026 Candice's Mango Ode Mangrove. All rights reserved.
       </p>
     </div>
   </footer>

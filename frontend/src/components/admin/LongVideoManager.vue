@@ -115,7 +115,14 @@
           </div>
 
           <label class="block"><span class="mb-1 block text-sm text-gray-600">排序</span><input v-model.number="form.sortOrder" type="number" class="w-full border border-gray-200 px-3 py-2 text-sm" /></label>
-          <label class="block"><span class="mb-1 block text-sm text-gray-600">状态</span><select v-model.number="form.status" class="w-full border border-gray-200 px-3 py-2 text-sm"><option :value="1">上架</option><option :value="0">下架</option></select></label>
+          <label class="block"><span class="mb-1 block text-sm text-gray-600">状态</span>
+            <template v-if="isSuperAdmin">
+              <select v-model.number="form.status" class="w-full border border-gray-200 px-3 py-2 text-sm"><option :value="1">上架</option><option :value="0">下架（待审核）</option></select>
+            </template>
+            <template v-else>
+              <div class="w-full border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-400 rounded">下架（待审核）— 需超级管理员审核后才会上架</div>
+            </template>
+          </label>
         </div>
 
         <p v-if="formError" class="mt-4 text-sm text-red-600">{{ formError }}</p>
@@ -149,9 +156,13 @@ const categoryError = ref('')
 const newCategory = ref('')
 const formError = ref('')
 const bilibiliInput = ref(null)
+const isSuperAdmin = JSON.parse(localStorage.getItem('mangrove_user') || '{}').role === 'SUPER_ADMIN'
 const form = reactive(emptyForm())
 
-function emptyForm() { return { id: null, title: '', category: categoryOptions.value[0] || '官方', description: '', localVideoUrl: '', bilibiliUrl: '', coverUrl: '', publishedDate: '', sortOrder: 0, status: 1 } }
+function emptyForm() {
+  const defaultStatus = isSuperAdmin ? 1 : 0
+  return { id: null, title: '', category: categoryOptions.value[0] || '官方', description: '', localVideoUrl: '', bilibiliUrl: '', coverUrl: '', publishedDate: '', sortOrder: 0, status: defaultStatus }
+}
 function token() { return localStorage.getItem('mangrove_token') || '' }
 async function request(url, options = {}) {
   const response = await fetch(url, { ...options, headers: { ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }), Authorization: `Bearer ${token()}`, ...(options.headers || {}) } })

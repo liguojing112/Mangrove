@@ -41,63 +41,88 @@
     </section>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-      <div class="mb-6 max-w-2xl">
-        <div class="rounded-full h-12 bg-white shadow border border-mangrove-100 flex items-center px-4">
-          <Search class="w-4 h-4 text-mangrove-400 flex-shrink-0" />
-          <input v-model="searchQuery" type="text" placeholder="搜索照片..." class="flex-1 outline-none text-sm px-3 bg-transparent" />
+      <!-- 搜索框 -->
+      <div class="mb-5 max-w-xl mx-auto">
+        <div class="rounded-full h-11 bg-white border-2 border-pink-200 flex items-center px-2 shadow-sm">
+          <input v-model="searchQuery" type="text" placeholder="搜索照片..." class="flex-1 outline-none text-sm px-3 bg-transparent text-gray-700 placeholder:text-pink-300" />
+          <button class="w-9 h-9 rounded-full bg-pink-100 flex items-center justify-center flex-shrink-0 hover:bg-pink-200 transition-colors">
+            <Search class="w-4 h-4 text-pink-400" />
+          </button>
         </div>
       </div>
-      <div class="flex justify-center mb-8">
+
+      <!-- 分类标签 -->
+      <div class="flex justify-center mb-6">
         <div class="flex gap-2 flex-wrap justify-center" @touchstart.stop @touchend.stop>
           <button v-for="c in displayCategories" :key="c.value" class="shrink-0 rounded-full px-5 py-2 text-sm font-medium transition-all"
-            :class="activeCategory===c.value ? 'bg-mangrove-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-200 hover:border-mangrove-300'"
-            @click="activeCategory=c.value">{{ c.label }} ({{ c.count }})</button>
+            :class="activeCategory===c.value ? 'bg-pink-500 text-white shadow-sm shadow-pink-200' : 'bg-white text-pink-400 border border-pink-200 hover:border-pink-300 hover:bg-pink-50'"
+            @click="activeCategory=c.value">{{ c.label }}</button>
         </div>
       </div>
-      <div v-if="loading" class="flex justify-center py-20"><div class="animate-spin rounded-full h-8 w-8 border-2 border-mangrove-500 border-t-transparent" /></div>
-      <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div v-for="p in displayedPhotos" :key="p.id" class="group rounded-2xl overflow-hidden bg-white border border-mangrove-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-          <div class="aspect-[3/4] bg-mangrove-50 flex items-center justify-center overflow-hidden relative">
-            <img v-if="p.fileUrl" :src="p.fileUrl" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-            <Camera v-else class="w-10 h-10 text-mangrove-300" />
-            <span class="absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[10px] bg-black/50 text-white" v-if="p.categoryLabel">{{ p.categoryLabel }}</span>
-          </div>
-          <div class="p-3">
-            <p class="text-sm font-medium text-gray-800 truncate">{{ p.title || '未命名' }}</p>
-            <div class="flex items-center justify-between mt-1">
-              <span :class="['px-2 py-0.5 rounded-full text-[11px] font-medium', catClass(p.categoryLabel)]">{{ p.categoryLabel || '未分类' }}</span>
-              <span class="text-[11px] text-gray-400">{{ p.date || '' }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div v-if="!loading && displayedPhotos.length===0" class="text-center py-16 text-gray-400">
+
+      <!-- 照片网格 -->
+      <div v-if="loading" class="flex justify-center py-20"><div class="animate-spin rounded-full h-8 w-8 border-2 border-pink-400 border-t-transparent" /></div>
+      <div v-else-if="displayedPhotos.length===0" class="text-center py-16 text-pink-300">
         <Camera class="w-10 h-10 mx-auto mb-2" /><p>暂无照片</p>
       </div>
-      <h2 class="text-lg font-semibold text-gray-900 mb-4 mt-12">照片分类</h2>
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div v-for="c in displayCategories" :key="c.value" class="card p-4 cursor-pointer hover:shadow-md transition-all"
-          :class="activeCategory===c.value ? 'border-mangrove-400 bg-mangrove-50' : 'border-gray-100 bg-white'" @click="activeCategory=c.value">
-          <div class="flex items-center justify-between mb-2">
-            <div><p class="font-medium text-sm text-gray-900">{{ c.label }}</p><p class="text-xs text-gray-400 mt-0.5">共 {{ c.count }} 张</p></div>
-            <Heart :size="18" :class="activeCategory===c.value ? 'text-mangrove-500' : 'text-gray-300'" />
+      <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div v-for="p in displayedPhotos" :key="p.id" @click="openPreview(p)"
+          class="group rounded-3xl overflow-hidden bg-white border-[4.5px] border-teal-200 shadow-sm hover:shadow-md transition-all cursor-pointer">
+          <div class="aspect-[3/4] bg-pink-50 overflow-hidden relative">
+            <img v-if="p.fileUrl" :src="p.fileUrl" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+            <Camera v-else class="w-10 h-10 text-pink-200" />
           </div>
-          <div class="flex gap-1">
-            <div v-for="(p,pi) in getCatThumbs(c.value)" :key="pi" class="w-10 h-10 rounded-full bg-mangrove-100 overflow-hidden">
-              <img v-if="p" :src="p" class="w-full h-full object-cover" />
+        </div>
+      </div>
+
+      <!-- 加载更多 -->
+      <div v-if="hasMore" class="flex justify-center mt-8">
+        <button @click="loadMore"
+          class="px-8 py-3 rounded-full bg-white border-2 border-pink-300 text-pink-500 font-medium text-sm hover:bg-pink-50 hover:border-pink-400 transition-all shadow-sm">
+          加载更多 ({{ visibleCount }} / {{ filteredPhotos.length }})
+        </button>
+      </div>
+
+      <!-- 照片分类（拍立得风格） -->
+      <div v-if="categoryCards.length > 1" class="mt-12">
+        <h2 class="text-lg font-semibold text-gray-800 mb-5 text-center">照片分类</h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-5">
+          <div v-for="(card, ci) in categoryCards" :key="card.value"
+            class="polaroid-card cursor-pointer group"
+            :style="{ transform: `rotate(${card.rotate}deg)` }"
+            @click="activeCategory = card.value; window.scrollTo({ top: 0, behavior: 'smooth' })">
+            <div class="polaroid-inner">
+              <div class="aspect-square overflow-hidden rounded-lg bg-pink-50">
+                <img v-if="card.thumb" :src="card.thumb" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                <Camera v-else class="w-8 h-8 text-pink-200 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+              </div>
+              <p class="text-center text-sm font-medium text-gray-700 mt-3 pb-1">{{ card.label }}</p>
             </div>
-            <div v-if="c.count > 3" class="w-10 h-10 rounded-full bg-mangrove-100 flex items-center justify-center text-xs text-mangrove-600">+{{ c.count-3 }}</div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- 灯箱预览 -->
+    <Teleport to="body">
+      <div v-if="previewPhoto" class="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4"
+        @click.self="closePreview" @keydown.escape="closePreview">
+        <button @click="closePreview"
+          class="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-xl transition-colors">
+          ✕
+        </button>
+        <img :src="previewPhoto.fileUrl" :alt="previewPhoto.title"
+          class="max-h-[92vh] max-w-[95vw] object-contain rounded-lg shadow-2xl" />
+        <p v-if="previewPhoto.title" class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-sm">{{ previewPhoto.title }}</p>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Search, Camera, Heart, Sparkles, Star, Sun, MapPin, Eye } from 'lucide-vue-next'
+import { Search, Camera, Sparkles, Star, Sun, MapPin, Eye } from 'lucide-vue-next'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { A11y, Autoplay, Pagination } from 'swiper/modules'
 
@@ -113,6 +138,7 @@ const loading = ref(true)
 const photos = ref([])
 const backendCats = ref([])
 const heroCardUrls = ref([]) // 从管理后台配置的 5 张 Hero 卡片照片
+const bgExcludeUrls = ref([]) // 背景图 URL（芒果园、小树、首页背景）
 
 const fetchHeroCardUrls = async () => {
   try {
@@ -121,6 +147,26 @@ const fetchHeroCardUrls = async () => {
     if (json.code === 200 && Array.isArray(json.data)) {
       heroCardUrls.value = json.data
     }
+  } catch {}
+}
+
+const fetchBgExcludeUrls = async () => {
+  try {
+    const token = localStorage.getItem('mangrove_token')
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+    const [treeRes, littleRes, homeRes] = await Promise.all([
+      fetch('/api/admin/config/tree_background_url', { headers }).catch(() => null),
+      fetch('/api/admin/config/littletree_background_url', { headers }).catch(() => null),
+      fetch('/api/admin/config/homepage_background_url', { headers }).catch(() => null),
+    ])
+    const urls = []
+    const extractUrl = async (res) => {
+      if (!res?.ok) return
+      const j = await res.json()
+      if (j.code === 200 && j.data) urls.push(j.data)
+    }
+    await Promise.all([extractUrl(treeRes), extractUrl(littleRes), extractUrl(homeRes)])
+    bgExcludeUrls.value = urls
   } catch {}
 }
 
@@ -219,28 +265,49 @@ const filteredPhotos = computed(() => {
   let list = photos.value
   if (activeCategory.value !== 'all') list = list.filter(p => (p.categoryLabel || '未分类') === activeCategory.value)
   if (searchQuery.value.trim()) { const q = searchQuery.value.trim().toLowerCase(); list = list.filter(p => (p.title||'').toLowerCase().includes(q)) }
-  // 过滤掉已在 Hero 大卡片上展示的照片
+  // 过滤掉已在 Hero 大卡片上展示的照片 + 背景图
   const heroUrls = new Set(heroCardUrls.value.filter(Boolean))
-  if (heroUrls.size > 0) list = list.filter(p => !heroUrls.has(p.fileUrl))
+  const excludeUrls = new Set([...heroUrls, ...bgExcludeUrls.value.filter(Boolean)])
+  if (excludeUrls.size > 0) list = list.filter(p => !excludeUrls.has(p.fileUrl))
   return list
 })
-const displayedPhotos = computed(() => filteredPhotos.value.slice(0, 24))
-function catClass(c) { const m = { 'roadshow':'bg-blue-50 text-blue-700','event':'bg-purple-50 text-purple-700','daily':'bg-green-50 text-green-700' }; return m[c] || 'bg-mangrove-50 text-mangrove-700' }
-function getCatThumbs(cat) { const list = cat === 'all' ? photos.value : photos.value.filter(p => (p.categoryLabel||'未分类') === cat); return list.slice(0, 3).map(p => p.fileUrl) }
+const visibleCount = ref(24)
+const previewPhoto = ref(null)
+const displayedPhotos = computed(() => filteredPhotos.value.slice(0, visibleCount.value))
+const hasMore = computed(() => visibleCount.value < filteredPhotos.value.length)
+function loadMore() { visibleCount.value += 24 }
+function openPreview(photo) { previewPhoto.value = photo; document.body.style.overflow = 'hidden' }
+function closePreview() { previewPhoto.value = null; document.body.style.overflow = '' }
+
+// 切换分类或搜索时重置可见数量
+watch([activeCategory, searchQuery], () => { visibleCount.value = 24 })
+
+function getCatThumbs(cat) {
+  const list = cat === 'all' ? photos.value : photos.value.filter(p => (p.categoryLabel || '未分类') === cat)
+  return list.slice(0, 1).map(p => p.fileUrl)
+}
+
+const polaroidRotations = [-2.5, 1.8, -1.2, 2.3, -0.8, 1.5, -2.0, 0.9]
+const categoryCards = computed(() => {
+  return displayCategories.value
+    .filter(c => c.value !== 'all')
+    .map((c, i) => ({
+      ...c,
+      thumb: getCatThumbs(c.value)[0] || '',
+      rotate: polaroidRotations[i % polaroidRotations.length],
+    }))
+})
 
 async function loadData() {
   loading.value = true
   try {
-    const metaMap = {}
-    const metaRes = await fetch('/api/files/meta').catch(() => null)
-    if (metaRes && metaRes.ok) { const j = await metaRes.json(); if (j.data) j.data.forEach(m => { metaMap[m.filename] = m }) }
-    const fileRes = await fetch('/api/files/list').catch(() => null)
-    if (fileRes && fileRes.ok) {
-      const j = await fileRes.json()
+    // 只从元数据加载照片（仅 ResourceManager 上传的才有元数据）
+    const metaRes = await fetch('/api/files/meta?status=1').catch(() => null)
+    if (metaRes && metaRes.ok) {
+      const j = await metaRes.json()
       if (j.code === 200 && j.data) {
-        photos.value = j.data.filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f.filename||'')).map((f,i) => {
-          const m = metaMap[f.filename] || {}
-          return { id: 'f'+i, title: m.displayName || (f.filename||'').replace(/\.[^.]+$/,''), fileUrl: f.url, categoryLabel: m.category||'', date: m.photoDate || (f.createdAt||'').substring(0,10) }
+        photos.value = j.data.filter(m => /\.(jpg|jpeg|png|gif|webp)$/i.test(m.filename||'')).map((m,i) => {
+          return { id: 'f'+i, title: m.displayName || (m.filename||'').replace(/\.[^.]+$/,''), fileUrl: m.url, categoryLabel: m.category||'', date: m.photoDate || '' }
         })
       }
     }
@@ -248,6 +315,7 @@ async function loadData() {
     if (catRes && catRes.ok) { const cj = await catRes.json(); if (cj.data) backendCats.value = cj.data }
     // 获取 Hero 卡片照片
     await fetchHeroCardUrls()
+    await fetchBgExcludeUrls()
     // 获取艺人封面
     const ar = await fetch('/api/public/artists').catch(() => null)
     if (ar && ar.ok) {
@@ -502,5 +570,23 @@ onMounted(loadData)
 @media (prefers-reduced-motion: reduce) {
   .photo-hero-swiper :deep(.swiper-slide),
   .photo-hero-photo img { transition: none; }
+}
+
+/* 拍立得风格分类卡片 */
+.polaroid-card {
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 0.6rem 0.6rem 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.polaroid-card:hover {
+  transform: rotate(0deg) scale(1.03) !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.polaroid-inner {
+  background: #fafafa;
+  border-radius: 0.5rem;
+  overflow: hidden;
 }
 </style>

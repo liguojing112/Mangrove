@@ -10,9 +10,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 @Entity
 @Table(name = "merchandise")
 @Data
@@ -53,8 +50,8 @@ public class Merchandise {
     @Column(name = "profile_image_url", length = 500)
     private String profileImageUrl;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "bundle_image_urls", columnDefinition = "JSON")
+    @Convert(converter = com.mangrove.config.JsonListConverter.class)
+    @Column(name = "bundle_image_urls", columnDefinition = "LONGTEXT")
     private List<String> bundleImageUrls;
 
     @Column(name = "producer_id")

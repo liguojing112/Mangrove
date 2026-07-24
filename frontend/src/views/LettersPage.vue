@@ -69,10 +69,14 @@
 
           <!-- Footer: Like + Upload -->
           <div class="flex items-center justify-between mt-4">
-            <div class="flex items-center gap-1.5 text-gray-400 text-sm">
-              <Heart class="w-4 h-4" />
-              <span>{{ letter.likes }}</span>
-            </div>
+            <button
+              class="flex items-center gap-1.5 text-sm transition-colors"
+              :class="letter.liked ? 'text-pink-500' : 'text-gray-400 hover:text-pink-500'"
+              @click="toggleLike(letter)"
+            >
+              <Heart class="w-4 h-4" :class="letter.liked ? 'fill-pink-500' : ''" />
+              <span>{{ letter.likes || 0 }}</span>
+            </button>
             <label v-if="isLoggedIn" class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-mangrove-600 cursor-pointer transition-colors">
               <Upload class="w-3.5 h-3.5" />
               上传图片
@@ -168,11 +172,40 @@ async function fetchLetters() {
       } else {
         letters.value = []
       }
+      // Load liked state from localStorage
+      const likedIds = JSON.parse(localStorage.getItem('mangrove_liked_letters') || '[]')
+      letters.value.forEach(l => { l.liked = likedIds.includes(l.id) })
     }
   } catch (e) {
     console.error('加载来信失败:', e)
   } finally {
     loading.value = false
+  }
+}
+
+async function toggleLike(letter) {
+  if (!isLoggedIn.value) return
+  try {
+    const res = await fetch(`/api/letters/${letter.id}/like`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    })
+    const json = await res.json()
+    if (json.code === 200) {
+      letter.liked = !letter.liked
+      letter.likes = letter.liked ? (letter.likes || 0) + 1 : Math.max(0, (letter.likes || 0) - 1)
+      // Save liked state
+      const likedIds = JSON.parse(localStorage.getItem('mangrove_liked_letters') || '[]')
+      if (letter.liked) {
+        likedIds.push(letter.id)
+      } else {
+        const idx = likedIds.indexOf(letter.id)
+        if (idx !== -1) likedIds.splice(idx, 1)
+      }
+      localStorage.setItem('mangrove_liked_letters', JSON.stringify(likedIds))
+    }
+  } catch (e) {
+    console.error('点赞失败:', e)
   }
 }
 

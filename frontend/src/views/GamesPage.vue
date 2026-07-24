@@ -4,6 +4,20 @@
     <h1 class="section-title mb-1">芒园小游戏</h1>
     <p class="text-gray-500 mb-8">测测你对小芒的了解程度吧！</p>
 
+    <!-- External Game Links -->
+    <div class="card p-4 mb-8 max-w-2xl mx-auto">
+      <a
+        href="https://www.d8ok.com/g/km2560/fx.php"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex items-center justify-center gap-3 w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-green-400 to-emerald-500 text-white font-bold text-lg shadow-lg hover:shadow-xl hover:from-green-500 hover:to-emerald-600 transition-all"
+      >
+        <span class="text-2xl">🍉</span>
+        西瓜大合成
+        <span class="text-xs opacity-70 ml-1">↗</span>
+      </a>
+    </div>
+
     <!-- Difficulty Tabs -->
     <div class="flex items-center gap-2 mb-8">
       <button
@@ -223,7 +237,7 @@ async function nextQuestion() {
     answered.value = false
   } else {
     showResults.value = true
-    score.value = correctCount.value * 100
+    score.value = correctCount.value * { EASY: 50, MEDIUM: 100, HARD: 200 }[activeDifficulty.value]
     await saveScore()
   }
 }

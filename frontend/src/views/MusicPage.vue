@@ -102,12 +102,6 @@
       </template>
     </div>
 
-    <!-- 真实音频元素 -->
-    <audio ref="audioRef"
-      @timeupdate="onTimeUpdate"
-      @loadedmetadata="onMetadataLoaded"
-      @ended="playNext" />
-
     <!-- 底部播放器 -->
     <div v-if="currentSong" class="music-player" data-testid="music-player">
       <!-- 进度条 -->
@@ -148,12 +142,22 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, Pagination, A11y } from 'swiper/modules'
 import { Play, Pause, SkipBack, SkipForward, Heart, Music, Volume2, VolumeX, Sparkles, Flame, Clock3, ChevronRight, ExternalLink, Images, X } from 'lucide-vue-next'
+import { useAudioPlayer } from '@/composables/useAudioPlayer'
 import 'swiper/css'
 import 'swiper/css/pagination'
+
+const {
+  currentSong, isPlaying, currentTime, totalDuration,
+  volume, isMuted, isSeeking, seekPercent, currentDurationDisplay,
+  playSong: globalPlaySong, togglePlay: globalTogglePlay,
+  playNext: globalPlayNext, playPrev: globalPlayPrev,
+  setQueue: globalSetQueue, seek: globalSeek,
+  setVolume, toggleMute,
+} = useAudioPlayer()
 
 const swiperModules = [Autoplay, Pagination, A11y]
 const swiperBreakpoints = {
@@ -226,45 +230,15 @@ const filteredSongs = computed(() => {
   return activeFilter.value ? songs.value.filter(s => s.category === activeFilter.value) : songs.value
 })
 
-const currentSongIndex = ref(-1)
-const isPlaying = ref(false)
-const currentTime = ref(0)
-const totalDuration = ref(0)
 const durations = ref({})
 const durationSeconds = ref({})
-const audioRef = ref(null)
 const progressBarRef = ref(null)
 const durationLoaders = new Set()
-const isSeeking = ref(false)
-const seekPercent = ref(0)
-const currentSong = computed(() => songs.value[currentSongIndex.value] || null)
-const currentDurationDisplay = computed(() => {
-  if (!currentSong.value) return '00:00'
-  if (totalDuration.value) return formatTime(totalDuration.value)
-  return getSongDuration(currentSong.value)
+const progressPercent = computed(() => {
+  if (isSeeking.value) return seekPercent.value
+  if (!totalDuration.value) return 0
+  return (currentTime.value / totalDuration.value) * 100
 })
-
-const volume = ref(0.8)
-const isMuted = ref(false)
-const volumeBeforeMute = ref(0.8)
-
-function setVolume(v) {
-  volume.value = v
-  isMuted.value = v === 0
-  if (audioRef.value) audioRef.value.volume = v
-}
-
-function toggleMute() {
-  if (isMuted.value) {
-    volume.value = volumeBeforeMute.value || 0.8
-    isMuted.value = false
-  } else {
-    volumeBeforeMute.value = volume.value
-    volume.value = 0
-    isMuted.value = true
-  }
-  if (audioRef.value) audioRef.value.volume = volume.value
-}
 
 function selectCollection(id) {
   activeCollection.value = id
@@ -287,31 +261,13 @@ function recordPlay(song) {
 }
 
 function playSong(song) {
-  const idx = songs.value.findIndex(s => s.id === song.id)
-  if (idx === -1 || !audioRef.value || !song.localAudioUrl) return
-  currentSongIndex.value = idx
-  currentTime.value = 0
-  totalDuration.value = durationSeconds.value[song.url] || 0
-  audioRef.value.src = song.url
-  audioRef.value.play().then(() => {
-    isPlaying.value = true
-    recordPlay(song)
-    updateDuration(song.url)
-  }).catch(err => { console.warn('播放失败:', err) })
+  if (!song?.localAudioUrl) return
+  globalPlaySong(song)
+  globalSetQueue(filteredSongs.value)
 }
 
-function updateDuration(url) {
-  if (audioRef.value && audioRef.value.duration && isFinite(audioRef.value.duration)) {
-    cacheDuration(url, audioRef.value.duration)
-    totalDuration.value = audioRef.value.duration
-  }
-}
-
-const progressPercent = computed(() => {
-  if (isSeeking.value) return seekPercent.value
-  if (!totalDuration.value) return 0
-  return (currentTime.value / totalDuration.value) * 100
-})
+function playNext() { globalPlayNext() }
+function playPrev() { globalPlayPrev() }
 
 function formatTime(sec) {
   if (!sec || !isFinite(sec)) return '00:00'
@@ -332,16 +288,13 @@ function startSeek(e) {
   isSeeking.value = true
   seekPercent.value = getSeekPercent(e)
   const onMove = (ev) => { ev.preventDefault(); seekPercent.value = getSeekPercent(ev) }
-  const onUp = (ev) => {
+  const onUp = () => {
     document.removeEventListener('mousemove', onMove)
     document.removeEventListener('mouseup', onUp)
     document.removeEventListener('touchmove', onMove)
     document.removeEventListener('touchend', onUp)
     isSeeking.value = false
-    if (audioRef.value && totalDuration.value) {
-      audioRef.value.currentTime = (seekPercent.value / 100) * totalDuration.value
-      currentTime.value = audioRef.value.currentTime
-    }
+    globalSeek(seekPercent.value)
   }
   document.addEventListener('mousemove', onMove)
   document.addEventListener('mouseup', onUp)
@@ -349,54 +302,17 @@ function startSeek(e) {
   document.addEventListener('touchend', onUp)
 }
 
-function togglePlay() {
-  if (!audioRef.value || !currentSong.value?.url) return
-  if (isPlaying.value) { audioRef.value.pause(); isPlaying.value = false }
-  else {
-    const targetSrc = new URL(currentSong.value.url, window.location.href).href
-    if (audioRef.value.src !== targetSrc) {
-      audioRef.value.src = currentSong.value.url
-    }
-    totalDuration.value = totalDuration.value || durationSeconds.value[currentSong.value.url] || 0
-    audioRef.value.play().then(() => { isPlaying.value = true }).catch(err => { console.warn('播放失败:', err) })
-  }
-}
-
-function playPrev() {
-  playAdjacent(-1)
-}
-
-function playNext() {
-  playAdjacent(1)
-}
+function togglePlay() { globalTogglePlay() }
 
 function playAdjacent(direction) {
-  if (!songs.value.some(song => song.localAudioUrl)) return
-  let index = currentSongIndex.value
-  for (let count = 0; count < songs.value.length; count++) {
-    index = (index + direction + songs.value.length) % songs.value.length
-    if (songs.value[index].localAudioUrl) {
-      playSong(songs.value[index])
+  if (!filteredSongs.value.some(song => song.localAudioUrl)) return
+  let index = queueIndex.value
+  for (let count = 0; count < filteredSongs.value.length; count++) {
+    index = (index + direction + filteredSongs.value.length) % filteredSongs.value.length
+    if (filteredSongs.value[index].localAudioUrl) {
+      playSong(filteredSongs.value[index])
       return
     }
-  }
-}
-
-function onMetadataLoaded() {
-  if (audioRef.value && audioRef.value.duration && isFinite(audioRef.value.duration)) {
-    const song = songs.value[currentSongIndex.value]
-    if (song) {
-      cacheDuration(song.url, audioRef.value.duration)
-      totalDuration.value = audioRef.value.duration
-    }
-  }
-}
-
-function onTimeUpdate() {
-  if (!audioRef.value) return
-  if (!isSeeking.value) currentTime.value = audioRef.value.currentTime
-  if (!totalDuration.value && audioRef.value.duration && isFinite(audioRef.value.duration)) {
-    totalDuration.value = audioRef.value.duration
   }
 }
 
@@ -452,7 +368,6 @@ function preloadDurations(list) {
 }
 
 onMounted(async () => {
-  if (audioRef.value) audioRef.value.volume = volume.value
   try {
     const [trackRes, albumRes] = await Promise.all([fetch('/api/music/tracks'), fetch('/api/music/albums')])
     const trackJson = await trackRes.json()
@@ -471,7 +386,6 @@ onMounted(async () => {
           url,
         }
       })
-      currentSongIndex.value = songs.value.findIndex(song => song.localAudioUrl)
       preloadDurations(songs.value.filter(song => song.localAudioUrl))
     }
     if (albumJson.code === 200 && Array.isArray(albumJson.data)) albums.value = albumJson.data

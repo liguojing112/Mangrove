@@ -1,6 +1,6 @@
 <template>
   <div
-    class="rounded-2xl overflow-hidden h-[420px] lg:h-[520px] opacity-75 hover:opacity-100 transition-opacity duration-300"
+    class="overflow-hidden h-[200px] lg:h-[320px] opacity-75 hover:opacity-100 transition-opacity duration-300"
   >
     <Swiper
       :modules="modules"
@@ -10,6 +10,7 @@
       :speed="600"
       :pagination="{ clickable: true }"
       class="h-full"
+      @swiper="onSwiper"
     >
       <SwiperSlide v-for="(slide, i) in slides" :key="i">
         <div
@@ -18,10 +19,6 @@
         >
           <img v-if="slide.url" :src="slide.url" :alt="slide.title" class="absolute inset-0 w-full h-full object-cover" />
           <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-          <div class="absolute bottom-0 left-0 right-0 px-6 pb-5 text-center z-10">
-            <h3 class="text-xl font-bold text-white drop-shadow-sm">{{ slide.title }}</h3>
-            <p class="text-sm text-white/80 mt-1">{{ slide.date }}</p>
-          </div>
         </div>
       </SwiperSlide>
     </Swiper>
@@ -29,18 +26,33 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, Pagination } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/pagination'
 
+const props = defineProps({
+  slideTo: { type: Number, default: -1 }
+})
+
 const modules = [Autoplay, Pagination]
+const swiperInstance = ref(null)
 
 const autoplayConfig = {
   delay: 3000,
   disableOnInteraction: false
 }
+
+function onSwiper(swiper) {
+  swiperInstance.value = swiper
+}
+
+watch(() => props.slideTo, (idx) => {
+  if (idx >= 0 && swiperInstance.value) {
+    swiperInstance.value.slideToLoop(idx, 600)
+  }
+})
 
 const fallbackSlides = [
   { bg: 'bg-gradient-to-br from-mangrove-300 to-mangrove-500', title: '舞台瞬间', date: '2025-06-20' },

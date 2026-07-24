@@ -5,8 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -37,8 +35,8 @@ public class WorkSectionItem {
     @Column(name = "sort_order", nullable = false, columnDefinition = "INT DEFAULT 0")
     private Integer sortOrder;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "extra_data", columnDefinition = "JSON")
+    @Convert(converter = com.mangrove.config.JsonMapConverter.class)
+    @Column(name = "extra_data", columnDefinition = "LONGTEXT")
     private Map<String, Object> extraData;
 
     @Column(name = "created_at", nullable = false, columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")

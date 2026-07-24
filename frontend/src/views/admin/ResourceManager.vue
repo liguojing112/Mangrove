@@ -21,9 +21,9 @@
     <LongVideoManager v-else-if="activeSection === 'longVideos'" />
     <template v-else>
 
-    <!-- 音乐分类管理 -->
-    <div class="card p-5 mb-6">
-      <h3 class="text-sm font-semibold text-gray-800 mb-3">🎵 音乐分类管理</h3>
+	    <!-- 分类标签管理 -->
+	    <div class="card p-5 mb-6">
+	      <h3 class="text-sm font-semibold text-gray-800 mb-3">🏷️ 分类标签管理</h3>
       <div class="flex items-center gap-2 flex-wrap mb-2">
         <span v-for="(cat, i) in musicCats" :key="cat"
           class="tag text-xs cursor-pointer group relative hover:bg-mangrove-100 transition-colors">
@@ -124,7 +124,8 @@
           </template>
           <template v-else-if="isVideo(file)">
             <div class="w-full h-full bg-gray-900 flex items-center justify-center relative">
-              <video :src="file.url || file.fileUrl" class="w-full h-full object-cover opacity-40" muted preload="metadata" @loadeddata="$event.target.currentTime=0.5" />
+              <img v-if="file.thumbnailUrl" :src="file.thumbnailUrl" class="w-full h-full object-cover opacity-60" alt="" />
+              <Video v-else class="w-12 h-12 text-gray-600" />
               <div class="absolute inset-0 flex items-center justify-center">
                 <div class="w-12 h-12 rounded-full bg-white/30 flex items-center justify-center">
                   <Play class="w-5 h-5 text-white ml-0.5" />
@@ -137,14 +138,14 @@
               <Music class="w-10 h-10 text-gray-400" />
             </div>
           </template>
-          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2">
-            <button class="opacity-0 group-hover:opacity-100 transition-all bg-white rounded-full p-2 shadow-lg" @click="previewFile(file)" title="预览">
+          <div class="absolute inset-0 bg-black/30 flex items-center justify-center gap-2 z-10 opacity-0 hover:opacity-100 touch-manipulation" style="-webkit-tap-highlight-color:transparent">
+            <button class="bg-white rounded-full p-2 shadow-lg" @click.stop="previewFile(file)" title="预览">
               <Eye class="w-4 h-4 text-gray-700" />
             </button>
-            <button class="opacity-0 group-hover:opacity-100 transition-all bg-blue-500 rounded-full p-2 shadow-lg" @click="editFile(file)" title="编辑属性">
+            <button class="bg-blue-500 rounded-full p-2 shadow-lg" @click.stop="editFile(file)" title="编辑属性">
               <Pencil class="w-4 h-4 text-white" />
             </button>
-            <button class="opacity-0 group-hover:opacity-100 transition-all bg-red-500 rounded-full p-2 shadow-lg" @click="deleteFile(file)" title="删除">
+            <button class="bg-red-500 rounded-full p-2 shadow-lg" @click.stop="removeFile(file)" title="删除">
               <Trash2 class="w-4 h-4 text-white" />
             </button>
           </div>
@@ -152,13 +153,16 @@
             {{ isImage(file) ? '照片' : isVideo(file) ? '视频' : '音乐' }}
           </span>
         </div>
-        <div class="p-3">
+          <div class="p-3">
           <p class="text-xs text-gray-800 font-medium truncate">{{ file.displayName || file.filename || '未命名' }}</p>
           <div class="flex items-center gap-2 mt-1 flex-wrap">
             <span v-if="file.category" class="text-[10px] px-1.5 py-0.5 rounded-full bg-mangrove-50 text-mangrove-700">{{ file.category }}</span>
             <span v-if="file.seqNo" class="text-[10px] text-gray-400">#{{ file.seqNo }}</span>
             <span class="text-[10px] text-gray-400">{{ file.fileType || '' }}</span>
             <span class="text-[10px] text-gray-400">{{ formatSize(file) }}</span>
+            <span v-if="file.auditStatus === 1" class="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">已审核</span>
+            <span v-else-if="file.auditStatus === 0" class="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">待审核</span>
+            <span v-else-if="file.auditStatus === 2" class="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">已拒绝</span>
           </div>
         </div>
       </div>
@@ -254,10 +258,7 @@ const defaultMusicCats = ['单曲', '舞台', '翻唱']
 const storedMusicCats = JSON.parse(localStorage.getItem('mangrove_music_cats') || '[]')
 const musicCats = ref([...new Set([...defaultMusicCats, ...storedMusicCats])])
 const allCategories = computed(() => {
-  const stored = JSON.parse(localStorage.getItem('mangrove_music_cats') || '[]')
-  const base = defaultMusicCats
-  const merged = [...new Set([...base, ...stored])]
-  return [...new Set([...customCategories.value, ...merged])]
+  return [...new Set([...customCategories.value, ...musicCats.value])]
 })
 const newMusicCat = ref('')
 const pendingFiles = ref([])
@@ -292,7 +293,7 @@ async function loadFiles() {
     if (fileJson.code === 200 && fileJson.data) {
       const all = fileJson.data.map(f => {
         const m = metaMap[f.filename] || {}
-        return { ...f, displayName: m.displayName, seqNo: m.seqNo, category: m.category, photoDate: m.photoDate }
+        return { ...f, displayName: m.displayName, seqNo: m.seqNo, category: m.category, photoDate: m.photoDate, auditStatus: m.status }
       })
       files.value = activeType.value === 'all' ? all : all.filter(f => activeType.value === 'image' ? isImage(f) : activeType.value === 'video' ? isVideo(f) : isAudio(f))
       totalCount.value = files.value.length
@@ -355,8 +356,12 @@ async function startUpload() {
             seqNo: pf.seq || 0,
             category: pf.category || '',
             photoDate: pf.date || '',
+            status: (JSON.parse(localStorage.getItem('mangrove_user') || '{}').role === 'SUPER_ADMIN') ? 1 : 0,
           })
-        }).catch(() => {})
+        }).catch(err => {
+          console.error('保存元数据失败:', err)
+          pf.error = '元数据保存失败'
+        })
       }
     } catch (e) {
       pf.status = 'error'
@@ -367,14 +372,24 @@ async function startUpload() {
   loadFiles()
 }
 
-async function deleteFile(file) {
-  if (!confirm('确定删除？')) return
+async function removeFile(file) {
+  const name = file.filename || (file.fileUrl || file.url || '').split('/').pop() || ''
+  const token = getToken()
+  if (!name) return alert('无法获取文件名: ' + JSON.stringify(file).slice(0, 100))
+  if (!token) return alert('未登录，请重新登录管理后台')
   try {
-    const name = file.filename || file.fileUrl?.split('/').pop() || ''
-    if (!name) return
-    await fetch(`/api/files/${name}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } })
-    loadFiles()
-  } catch {}
+    const res = await fetch(`/api/files/${name}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+    if (res.ok) {
+      const idx = files.value.findIndex(f => f.filename === name)
+      if (idx !== -1) files.value.splice(idx, 1)
+      totalCount.value = files.value.length
+    } else {
+      const j = await res.json().catch(() => ({}))
+      alert('删除失败(' + res.status + '): ' + (j.msg || ''))
+    }
+  } catch (e) {
+    alert('网络错误: ' + e.message)
+  }
 }
 
 function previewFile(file) { previewFileObj.value = file; previewVisible.value = true }

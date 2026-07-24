@@ -48,8 +48,8 @@ public class CommentController {
         }
 
         List<Comment> commentList = commentRepository
-                .findByTargetTypeAndTargetIdAndStatusOrderByCreatedAtDesc(type, targetId, 1, pageable);
-        long total = commentRepository.countByTargetTypeAndTargetIdAndStatus(type, targetId, 1);
+                .findByTargetTypeAndTargetIdAndStatusAndParentIsNullOrderByCreatedAtDesc(type, targetId, 1, pageable);
+        long total = commentRepository.countByTargetTypeAndTargetIdAndStatusAndParentIsNull(type, targetId, 1);
 
         PageResult<Comment> pageResult = PageResult.<Comment>builder()
                 .content(commentList)

@@ -652,6 +652,7 @@ onMounted(() => {
 watch(activeView, (newView) => {
   if (newView === 'sections') {
     fetchSectionItems()
+    fetchAvailableWorks()
   }
 })
 </script>

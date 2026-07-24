@@ -5,8 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,12 +52,12 @@ public class Lottery {
     @Column(nullable = false, columnDefinition = "ENUM('PENDING','ACTIVE','ENDED','DRAWN') DEFAULT 'PENDING'")
     private Status status;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "winner_user_ids", columnDefinition = "JSON")
+    @Convert(converter = com.mangrove.config.JsonLongListConverter.class)
+    @Column(name = "winner_user_ids", columnDefinition = "LONGTEXT")
     private List<Long> winnerUserIds;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "winner_nicknames", columnDefinition = "JSON")
+    @Convert(converter = com.mangrove.config.JsonListConverter.class)
+    @Column(name = "winner_nicknames", columnDefinition = "LONGTEXT")
     private List<String> winnerNicknames;
 
     @Column(name = "entry_count", nullable = false, columnDefinition = "INT DEFAULT 0")

@@ -1,388 +1,251 @@
 <template>
-  <div class="audit-page min-w-0">
-    <!-- 标题 -->
+  <div>
     <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
       <div>
         <h2 class="text-xl font-bold text-gray-900">内容审核面板</h2>
-        <p class="text-sm text-gray-500 mt-1">审核用户上传内容和删除申请</p>
+        <p class="text-sm text-gray-500 mt-1">审核普通管理员上传的内容</p>
       </div>
     </div>
 
-    <!-- 分类标签 -->
-    <div class="flex gap-3 mb-6">
-      <button
-        class="px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
-        :class="activeTab === 'upload'
-          ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200'
-          : 'bg-white text-gray-600 border border-gray-200 hover:border-emerald-300 hover:text-emerald-600'"
-        @click="switchTab('upload')"
-      >
-        <el-icon class="mr-1.5" style="vertical-align: -2px"><UploadFilled /></el-icon>
-        待审核内容
-        <span
-          v-if="uploadTotal > 0"
-          class="ml-2 px-2 py-0.5 rounded-full text-xs"
-          :class="activeTab === 'upload' ? 'bg-emerald-500 text-white' : 'bg-emerald-100 text-emerald-700'"
-        >{{ uploadTotal }}</span>
-      </button>
-      <button
-        class="px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
-        :class="activeTab === 'delete'
-          ? 'bg-red-500 text-white shadow-lg shadow-red-200'
-          : 'bg-white text-gray-600 border border-gray-200 hover:border-red-300 hover:text-red-500'"
-        @click="switchTab('delete')"
-      >
-        <el-icon class="mr-1.5" style="vertical-align: -2px"><DeleteFilled /></el-icon>
-        待审核删除申请
-        <span
-          v-if="deleteTotal > 0"
-          class="ml-2 px-2 py-0.5 rounded-full text-xs"
-          :class="activeTab === 'delete' ? 'bg-red-400 text-white' : 'bg-red-100 text-red-600'"
-        >{{ deleteTotal }}</span>
+    <!-- 内容分类 Tab -->
+    <div class="flex gap-2 mb-4 flex-wrap">
+      <button v-for="tab in contentTabs" :key="tab.value"
+        class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+        :class="activeContent === tab.value ? 'bg-mangrove-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+        @click="activeContent = tab.value; activeStatus = 'PENDING'">
+        {{ tab.label }}
+        <span v-if="tab.count > 0" class="ml-1.5 px-1.5 py-0.5 rounded-full text-xs" :class="activeContent === tab.value ? 'bg-white/20' : 'bg-red-100 text-red-600'">{{ tab.count }}</span>
       </button>
     </div>
 
-    <!-- 列表 -->
-    <div class="card overflow-hidden">
-      <!-- 空状态 -->
-      <div v-if="items.length === 0 && !loading" class="flex flex-col items-center justify-center py-20 text-gray-400">
-        <el-icon class="text-5xl mb-4"><FolderOpened /></el-icon>
-        <p class="text-sm">{{ activeTab === 'upload' ? '暂无待审核内容' : '暂无待审核删除申请' }}</p>
-      </div>
+    <!-- 状态 Tab -->
+    <div class="flex gap-2 mb-6">
+      <button v-for="st in statusTabs" :key="st.value"
+        class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+        :class="activeStatus === st.value ? st.activeClass : 'bg-gray-50 text-gray-500 hover:bg-gray-100'"
+        @click="activeStatus = st.value">
+        {{ st.label }}
+      </button>
+    </div>
 
-      <!-- 加载中 -->
-      <div v-if="loading" class="flex items-center justify-center py-20">
-        <el-icon class="is-loading text-3xl text-emerald-500"><Loading /></el-icon>
-      </div>
+    <div v-if="loading" class="py-16 text-center text-sm text-gray-400">
+      <div class="animate-spin rounded-full h-6 w-6 border-2 border-mangrove-500 border-t-transparent mx-auto mb-3"></div>
+      加载中...
+    </div>
 
-      <!-- 审核列表 -->
-      <div v-for="item in items" :key="item.auditLogId" class="border-b border-gray-100 last:border-b-0">
-        <div class="flex items-center gap-5 p-5 hover:bg-gray-50/50 transition-colors">
-          <!-- 缩略图 -->
-          <div class="flex-shrink-0 w-[120px] h-[80px] rounded-lg overflow-hidden bg-gray-100">
-            <img
-              v-if="item.thumbnailUrl || item.fileUrl"
-              :src="item.thumbnailUrl || item.fileUrl"
-              :alt="item.title"
-              class="w-full h-full object-cover"
-              @error="onImgError"
-            />
-            <div v-else class="flex items-center justify-center w-full h-full text-gray-400">
-              <el-icon class="text-2xl"><PictureFilled /></el-icon>
-            </div>
-          </div>
-
-          <!-- 信息区 -->
+    <!-- 文件审核 -->
+    <template v-if="activeContent === 'files'">
+      <div v-if="filteredFiles.length === 0" class="py-16 text-center text-sm text-gray-400">{{ emptyText }}</div>
+      <div v-else class="space-y-3">
+        <div v-for="item in filteredFiles" :key="item.filename" class="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200">
+          <span class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-lg flex-shrink-0">
+            {{ isImage(item) ? '📷' : isVideo(item) ? '🎬' : '🎵' }}
+          </span>
           <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-3 mb-1.5">
-              <h3 class="text-sm font-semibold text-gray-900 truncate">{{ item.title }}</h3>
-              <span
-                class="flex-shrink-0 px-2 py-0.5 rounded-md text-xs font-medium"
-                :class="getCategoryClass(item.category)"
-              >{{ getCategoryLabel(item.category) }}</span>
-              <span
-                v-if="item.action === 'DELETE'"
-                class="flex-shrink-0 px-2 py-0.5 rounded-md text-xs font-medium bg-red-100 text-red-700"
-              >删除申请</span>
-            </div>
-            <p v-if="item.description" class="text-xs text-gray-500 truncate mb-1.5">{{ item.description }}</p>
-            <div class="flex items-center gap-4 text-xs text-gray-400">
-              <span>
-                <el-icon style="vertical-align: -2px"><User /></el-icon>
-                上传者: {{ item.uploaderName || item.uploaderId }}
-              </span>
-              <span v-if="item.initiatorName">
-                <el-icon style="vertical-align: -2px"><EditPen /></el-icon>
-                申请人: {{ item.initiatorName }}
-              </span>
-              <span>
-                <el-icon style="vertical-align: -2px"><Clock /></el-icon>
-                {{ formatTime(item.createdAt) }}
-              </span>
-            </div>
+            <p class="text-sm font-medium text-gray-800 truncate">{{ item.displayName || item.filename }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">{{ item.category || '未分类' }}</p>
           </div>
-
-          <!-- 操作按钮 -->
-          <div class="flex-shrink-0 flex items-center gap-3">
-            <button
-              class="audit-btn-approve"
-              @click="openAuditDialog(item, 1)"
-            >
-              <el-icon><Check /></el-icon>
-              同意
-            </button>
-            <button
-              class="audit-btn-reject"
-              @click="openAuditDialog(item, 2)"
-            >
-              <el-icon><Close /></el-icon>
-              驳回
-            </button>
+          <span class="text-xs px-2 py-1 rounded-full" :class="statusBadgeClass(item.status)">{{ statusLabel(item.status) }}</span>
+          <div class="flex gap-1">
+            <button v-if="item.status !== 1" @click="approveFile(item)" class="px-3 py-1.5 text-xs font-medium text-white bg-emerald-500 rounded-lg hover:bg-emerald-600">通过</button>
+            <button v-if="item.status !== 2" @click="rejectFile(item)" class="px-3 py-1.5 text-xs font-medium text-white bg-red-400 rounded-lg hover:bg-red-500">驳回</button>
           </div>
         </div>
       </div>
+    </template>
 
-      <!-- 分页 -->
-      <div v-if="totalPages > 1" class="flex items-center justify-between px-5 py-4 border-t border-gray-100">
-        <span class="text-xs text-gray-500">共 {{ total }} 条，第 {{ currentPage }}/{{ totalPages }} 页</span>
-        <el-pagination
-          small
-          background
-          layout="prev, pager, next"
-          :total="total"
-          :page-size="pageSize"
-          :current-page="currentPage"
-          @update:current-page="onPageChange"
-        />
-      </div>
-    </div>
-
-    <!-- 审核弹窗 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="auditAction === 1 ? '确认审核通过' : '确认驳回'"
-      width="460px"
-      :close-on-click-modal="false"
-      destroy-on-close
-    >
-      <div class="py-2">
-        <div v-if="auditAction === 2" class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
-          <p class="text-sm text-amber-800">
-            <el-icon style="vertical-align: -2px"><WarningFilled /></el-icon>
-            <span class="ml-1">驳回后，该内容将不会在前台展示。</span>
-          </p>
-        </div>
-        <div v-if="auditAction === 1 && activeTab === 'delete'" class="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200">
-          <p class="text-sm text-blue-800">
-            <el-icon style="vertical-align: -2px"><InfoFilled /></el-icon>
-            <span class="ml-1">同意后将软删除该内容（前台不再显示）。</span>
-          </p>
-        </div>
-        <div class="mb-1">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            {{ auditAction === 1 ? '审核备注（选填）' : '驳回理由' }}
-          </label>
-          <el-input
-            v-model="auditComment"
-            type="textarea"
-            :rows="3"
-            :placeholder="auditAction === 1 ? '可填写审核备注...' : '请填写驳回理由...'"
-            maxlength="500"
-            show-word-limit
-          />
+    <!-- 音乐审核 -->
+    <template v-if="activeContent === 'music'">
+      <div v-if="filteredMusic.length === 0" class="py-16 text-center text-sm text-gray-400">{{ emptyText }}</div>
+      <div v-else class="space-y-3">
+        <div v-for="item in filteredMusic" :key="item.id" class="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200">
+          <img v-if="item.coverUrl" :src="item.coverUrl" class="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+          <span v-else class="w-12 h-12 rounded-lg bg-purple-50 flex items-center justify-center text-lg flex-shrink-0">🎵</span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-gray-800 truncate">{{ item.title }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">{{ item.category || '单曲' }}</p>
+          </div>
+          <span class="text-xs px-2 py-1 rounded-full" :class="item.status === 1 ? 'bg-emerald-100 text-emerald-700' : item.status === -1 ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700'">{{ item.status === 1 ? '已上架' : item.status === -1 ? '已驳回' : '待审核' }}</span>
+          <div class="flex gap-1">
+            <button v-if="item.status !== 1" @click="approveMusic(item)" class="px-3 py-1.5 text-xs font-medium text-white bg-emerald-500 rounded-lg hover:bg-emerald-600">通过</button>
+            <button v-if="item.status === 0" @click="rejectMusic(item)" class="px-3 py-1.5 text-xs font-medium text-white bg-red-400 rounded-lg hover:bg-red-500">驳回</button>
+          </div>
         </div>
       </div>
-      <template #footer>
-        <div class="flex justify-end gap-3">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button
-            :type="auditAction === 1 ? 'success' : 'danger'"
-            :loading="submitting"
-            @click="submitAudit"
-          >
-            {{ auditAction === 1 ? '确认通过' : '确认驳回' }}
-          </el-button>
+    </template>
+
+    <!-- 长视频审核 -->
+    <template v-if="activeContent === 'longVideos'">
+      <div v-if="filteredLongVideos.length === 0" class="py-16 text-center text-sm text-gray-400">{{ emptyText }}</div>
+      <div v-else class="space-y-3">
+        <div v-for="item in filteredLongVideos" :key="item.id" class="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200">
+          <img v-if="item.coverUrl" :src="item.coverUrl" class="w-16 h-10 rounded-lg object-cover flex-shrink-0" />
+          <span v-else class="w-16 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-lg flex-shrink-0">🎬</span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-gray-800 truncate">{{ item.title }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">{{ item.category || '长视频' }}</p>
+          </div>
+          <span class="text-xs px-2 py-1 rounded-full" :class="item.status === 1 ? 'bg-emerald-100 text-emerald-700' : item.status === -1 ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700'">{{ item.status === 1 ? '已上架' : item.status === -1 ? '已驳回' : '待审核' }}</span>
+          <div class="flex gap-1">
+            <button v-if="item.status !== 1" @click="approveLongVideo(item)" class="px-3 py-1.5 text-xs font-medium text-white bg-emerald-500 rounded-lg hover:bg-emerald-600">通过</button>
+            <button v-if="item.status === 0" @click="rejectLongVideo(item)" class="px-3 py-1.5 text-xs font-medium text-white bg-red-400 rounded-lg hover:bg-red-500">驳回</button>
+          </div>
         </div>
-      </template>
-    </el-dialog>
+      </div>
+    </template>
+
+    <!-- 投稿审核 -->
+    <template v-if="activeContent === 'works'">
+      <div v-if="filteredWorks.length === 0" class="py-16 text-center text-sm text-gray-400">{{ emptyText }}</div>
+      <div v-else class="space-y-3">
+        <div v-for="item in filteredWorks" :key="item.id" class="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200">
+          <img v-if="item.fileUrl" :src="item.fileUrl" class="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+          <span v-else class="w-12 h-12 rounded-lg bg-amber-50 flex items-center justify-center text-lg flex-shrink-0">🖼️</span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-gray-800 truncate">{{ item.title }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">{{ item.creator?.nickname || '匿名' }} · {{ categoryLabel(item.category) }}</p>
+          </div>
+          <span class="text-xs px-2 py-1 rounded-full" :class="workStatusClass(item.status)">{{ workStatusLabel(item.status) }}</span>
+          <div class="flex gap-1">
+            <button v-if="item.status === 'PENDING'" @click="approveWork(item)" class="px-3 py-1.5 text-xs font-medium text-white bg-emerald-500 rounded-lg hover:bg-emerald-600">通过</button>
+            <button v-if="item.status === 'PENDING'" @click="rejectWork(item)" class="px-3 py-1.5 text-xs font-medium text-white bg-red-400 rounded-lg hover:bg-red-500">驳回</button>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, computed, onMounted } from 'vue'
 
-const activeTab = ref('upload')
-const items = ref([])
 const loading = ref(false)
-const currentPage = ref(1)
-const pageSize = ref(10)
-const total = ref(0)
-const totalPages = ref(0)
-const uploadTotal = ref(0)
-const deleteTotal = ref(0)
+const activeContent = ref('files')
+const activeStatus = ref('PENDING')
 
-// 审核弹窗
-const dialogVisible = ref(false)
-const auditAction = ref(1)  // 1-同意, 2-驳回
-const auditComment = ref('')
-const currentAuditItem = ref(null)
-const submitting = ref(false)
+const allFiles = ref([])
+const allMusic = ref([])
+const allLongVideos = ref([])
+const allWorks = ref([])
 
-const apiBase = '/api/super-admin'
+function getToken() { return localStorage.getItem('mangrove_token') }
 
-function getToken() {
-  return localStorage.getItem('mangrove_token')
-}
+const statusTabs = [
+  { label: '待审核', value: 'PENDING', activeClass: 'bg-yellow-500 text-white' },
+  { label: '已通过', value: 'APPROVED', activeClass: 'bg-emerald-500 text-white' },
+  { label: '已驳回', value: 'REJECTED', activeClass: 'bg-red-400 text-white' },
+]
 
-async function fetchList() {
+const filteredFiles = computed(() => {
+  if (activeStatus.value === 'PENDING') return allFiles.value.filter(f => f.status === 0)
+  if (activeStatus.value === 'APPROVED') return allFiles.value.filter(f => f.status === 1)
+  return allFiles.value.filter(f => f.status === 2)
+})
+const filteredMusic = computed(() => {
+  if (activeStatus.value === 'PENDING') return allMusic.value.filter(t => t.status === 0)
+  if (activeStatus.value === 'APPROVED') return allMusic.value.filter(t => t.status === 1)
+  return allMusic.value.filter(t => t.status === -1)
+})
+const filteredLongVideos = computed(() => {
+  if (activeStatus.value === 'PENDING') return allLongVideos.value.filter(v => v.status === 0)
+  if (activeStatus.value === 'APPROVED') return allLongVideos.value.filter(v => v.status === 1)
+  return allLongVideos.value.filter(v => v.status === -1)
+})
+const filteredWorks = computed(() => {
+  if (activeStatus.value === 'PENDING') return allWorks.value.filter(w => w.status === 'PENDING')
+  if (activeStatus.value === 'APPROVED') return allWorks.value.filter(w => w.status === 'PUBLISHED' || w.status === 'FEATURED')
+  return allWorks.value.filter(w => w.status === 'HIDDEN')
+})
+
+const contentTabs = computed(() => [
+  { label: '📁 文件', value: 'files', count: allFiles.value.filter(f => f.status === 0).length },
+  { label: '🎵 音乐', value: 'music', count: allMusic.value.filter(t => t.status === 0).length },
+  { label: '🎬 长视频', value: 'longVideos', count: allLongVideos.value.filter(v => v.status === 0).length },
+  { label: '🖼️ 投稿', value: 'works', count: allWorks.value.filter(w => w.status === 'PENDING').length },
+])
+
+const emptyText = computed(() => {
+  const map = { PENDING: '暂无待审核内容', APPROVED: '暂无已通过内容', REJECTED: '暂无已驳回内容' }
+  return map[activeStatus.value] || '暂无数据'
+})
+
+function isImage(item) { return /\.(jpg|jpeg|png|gif|webp)$/i.test(item.filename || '') }
+function isVideo(item) { return /\.(mp4|webm|mov|avi)$/i.test(item.filename || '') }
+function categoryLabel(cat) { return { PREVIEW: '路透图', EDITED_PHOTO: '剪辑修图', VIDEO_EDIT: '视频剪辑' }[cat] || cat }
+function statusLabel(s) { return { 0: '待审核', 1: '已通过', 2: '已驳回' }[s] || '未知' }
+function statusBadgeClass(s) { return { 0: 'bg-yellow-100 text-yellow-700', 1: 'bg-emerald-100 text-emerald-700', 2: 'bg-red-100 text-red-600' }[s] || 'bg-gray-100' }
+function workStatusLabel(s) { return { PENDING: '待审核', PUBLISHED: '已通过', HIDDEN: '已驳回', FEATURED: '精选' }[s] || s }
+function workStatusClass(s) { return { PENDING: 'bg-yellow-100 text-yellow-700', PUBLISHED: 'bg-emerald-100 text-emerald-700', HIDDEN: 'bg-red-100 text-red-600', FEATURED: 'bg-amber-100 text-amber-700' }[s] || 'bg-gray-100' }
+
+async function loadAll() {
   loading.value = true
   try {
-    const params = new URLSearchParams({
-      page: currentPage.value - 1,
-      size: pageSize.value,
-      type: activeTab.value,
-    })
-    const res = await fetch(`${apiBase}/pending-list?${params}`, {
-      headers: { 'Authorization': `Bearer ${getToken()}` },
-    })
-    const json = await res.json()
-    if (json.code === 200 && json.data) {
-      items.value = json.data.content || []
-      total.value = json.data.totalElements || 0
-      totalPages.value = json.data.totalPages || 1
-      if (activeTab.value === 'upload') {
-        uploadTotal.value = total.value
-      } else {
-        deleteTotal.value = total.value
-      }
-    } else {
-      ElMessage.error(json.msg || '加载失败')
-    }
-  } catch {
-    ElMessage.error('网络错误，请确保后端服务已启动')
+    const headers = { Authorization: `Bearer ${getToken()}` }
+    const [filesRes, musicRes, videosRes, worksRes] = await Promise.all([
+      fetch('/api/files/meta', { headers }),
+      fetch('/api/admin/music/tracks', { headers }),
+      fetch('/api/admin/long-videos', { headers }),
+      fetch('/api/admin/works?page=0&size=100', { headers }),
+    ])
+    const [fj, mj, vj, wj] = await Promise.all([filesRes.json(), musicRes.json(), videosRes.json(), worksRes.json()])
+    if (fj.code === 200) allFiles.value = fj.data || []
+    if (mj.code === 200) allMusic.value = mj.data || []
+    if (vj.code === 200) allLongVideos.value = vj.data || []
+    if (wj.code === 200) allWorks.value = wj.data?.content || []
+  } catch (e) {
+    console.error('加载审核数据失败:', e)
   } finally {
     loading.value = false
   }
 }
 
-// 同时获取另一类别的数量
-async function fetchCounts() {
-  try {
-    const [uploadRes, deleteRes] = await Promise.all([
-      fetch(`${apiBase}/pending-list?page=0&size=1&type=upload`, {
-        headers: { 'Authorization': `Bearer ${getToken()}` },
-      }).then(r => r.json()),
-      fetch(`${apiBase}/pending-list?page=0&size=1&type=delete`, {
-        headers: { 'Authorization': `Bearer ${getToken()}` },
-      }).then(r => r.json()),
-    ])
-    uploadTotal.value = uploadRes.data?.totalElements || 0
-    deleteTotal.value = deleteRes.data?.totalElements || 0
-  } catch { /* ignore */ }
+// 文件
+async function approveFile(item) {
+  if (!confirm(`通过「${item.displayName || item.filename}」？`)) return
+  const res = await fetch(`/api/files/meta/${item.filename}/status?status=1`, { method: 'PUT', headers: { Authorization: `Bearer ${getToken()}` } })
+  if (res.ok) { item.status = 1 } else alert('操作失败')
+}
+async function rejectFile(item) {
+  if (!confirm(`驳回「${item.displayName || item.filename}」？`)) return
+  const res = await fetch(`/api/files/meta/${item.filename}/status?status=2`, { method: 'PUT', headers: { Authorization: `Bearer ${getToken()}` } })
+  if (res.ok) { item.status = 2 } else alert('操作失败')
 }
 
-function switchTab(tab) {
-  activeTab.value = tab
-  currentPage.value = 1
-  fetchList()
+// 音乐
+async function approveMusic(item) {
+  if (!confirm(`通过音乐「${item.title}」？`)) return
+  const res = await fetch(`/api/admin/music/tracks/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify({ ...item, status: 1 }) })
+  if (res.ok) { item.status = 1 } else alert('操作失败')
+}
+async function rejectMusic(item) {
+  if (!confirm(`驳回音乐「${item.title}」？`)) return
+  const res = await fetch(`/api/admin/music/tracks/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify({ ...item, status: -1 }) })
+  if (res.ok) { item.status = -1 } else alert('操作失败')
 }
 
-function onPageChange(p) {
-  currentPage.value = p
-  fetchList()
+// 长视频
+async function approveLongVideo(item) {
+  if (!confirm(`通过长视频「${item.title}」？`)) return
+  const res = await fetch(`/api/admin/long-videos/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify({ ...item, status: 1 }) })
+  if (res.ok) { item.status = 1 } else alert('操作失败')
+}
+async function rejectLongVideo(item) {
+  if (!confirm(`驳回长视频「${item.title}」？`)) return
+  const res = await fetch(`/api/admin/long-videos/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify({ ...item, status: -1 }) })
+  if (res.ok) { item.status = -1 } else alert('操作失败')
 }
 
-function openAuditDialog(item, action) {
-  currentAuditItem.value = item
-  auditAction.value = action
-  auditComment.value = ''
-  dialogVisible.value = true
+// 投稿
+async function approveWork(item) {
+  if (!confirm(`通过投稿「${item.title}」？`)) return
+  const res = await fetch(`/api/admin/works/${item.id}/approve`, { method: 'POST', headers: { Authorization: `Bearer ${getToken()}` } })
+  if (res.ok) { item.status = 'PUBLISHED' } else alert('操作失败')
+}
+async function rejectWork(item) {
+  if (!confirm(`驳回投稿「${item.title}」？`)) return
+  const res = await fetch(`/api/admin/works/${item.id}/reject`, { method: 'POST', headers: { Authorization: `Bearer ${getToken()}` } })
+  if (res.ok) { item.status = 'HIDDEN' } else alert('操作失败')
 }
 
-async function submitAudit() {
-  if (auditAction.value === 2 && !auditComment.value.trim()) {
-    ElMessage.warning('驳回时必须填写理由')
-    return
-  }
-  submitting.value = true
-  try {
-    const res = await fetch(`${apiBase}/audit`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getToken()}`,
-      },
-      body: JSON.stringify({
-        auditId: currentAuditItem.value.auditLogId,
-        action: auditAction.value,
-        comment: auditComment.value,
-      }),
-    })
-    const json = await res.json()
-    if (json.code === 200) {
-      ElMessage.success(auditAction.value === 1 ? '审核通过' : '已驳回')
-      dialogVisible.value = false
-      fetchList()
-      fetchCounts()
-    } else {
-      ElMessage.error(json.msg || '操作失败')
-    }
-  } catch {
-    ElMessage.error('网络错误')
-  } finally {
-    submitting.value = false
-  }
-}
-
-function getCategoryLabel(cat) {
-  const map = { PHOTO: '照片馆藏', VIDEO: '影像存档', WORK: '创作者产出' }
-  return map[cat] || cat
-}
-
-function getCategoryClass(cat) {
-  const map = { PHOTO: 'bg-blue-100 text-blue-700', VIDEO: 'bg-purple-100 text-purple-700', WORK: 'bg-amber-100 text-amber-700' }
-  return map[cat] || 'bg-gray-100 text-gray-600'
-}
-
-function formatTime(t) {
-  if (!t) return '-'
-  return t.replace('T', ' ').substring(0, 19)
-}
-
-function onImgError(e) {
-  e.target.style.display = 'none'
-}
-
-onMounted(() => {
-  fetchList()
-  fetchCounts()
-})
+onMounted(loadAll)
 </script>
-
-<style scoped>
-.audit-page {
-  max-width: 1000px;
-}
-
-.audit-btn-approve {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 18px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  background: #059669;
-  color: #fff;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.audit-btn-approve:hover {
-  background: #047857;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-}
-
-.audit-btn-reject {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 18px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  background: #fff;
-  color: #dc2626;
-  border: 1.5px solid #fca5a5;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.audit-btn-reject:hover {
-  background: #fef2f2;
-  border-color: #ef4444;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.12);
-}
-</style>

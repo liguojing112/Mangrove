@@ -37,35 +37,25 @@
           </div>
           <div class="min-w-0">
             <p class="text-sm font-semibold text-gray-900 truncate">{{ musicData.title || '背景音乐' }}</p>
-            <p class="text-xs text-gray-400 mt-0.5">青芒纪</p>
+            <p class="text-xs text-gray-400 mt-0.5">Candice's Mango Ode</p>
           </div>
         </div>
 
-        <!-- Audio controls -->
-        <audio
-          ref="audioRef"
-          :src="musicData.url"
-          preload="metadata"
-          @timeupdate="onTimeUpdate"
-          @loadedmetadata="onLoaded"
-          @ended="isPlaying = false"
-          class="hidden"
-        />
         <div class="flex items-center gap-3">
           <button
             class="w-10 h-10 rounded-full bg-mangrove-600 hover:bg-mangrove-700 text-white flex items-center justify-center flex-shrink-0 transition-colors"
             @click="togglePlay"
           >
-            <Pause v-if="isPlaying" class="w-5 h-5" />
+            <Pause v-if="globalIsPlaying" class="w-5 h-5" />
             <Play v-else class="w-5 h-5 ml-0.5" />
           </button>
           <div class="flex-1 min-w-0">
             <div class="w-full bg-gray-200 rounded-full h-1.5 cursor-pointer relative" @click="seekTo">
-              <div class="bg-mangrove-600 h-1.5 rounded-full transition-all" :style="{ width: progress + '%' }" />
+              <div class="bg-mangrove-600 h-1.5 rounded-full transition-all" :style="{ width: progressPercent + '%' }" />
             </div>
             <div class="flex justify-between mt-1">
-              <span class="text-[10px] text-gray-400">{{ formatTime(currentTime) }}</span>
-              <span class="text-[10px] text-gray-400">{{ formatTime(duration) }}</span>
+              <span class="text-[10px] text-gray-400">{{ formatTime(globalCurrentTime) }}</span>
+              <span class="text-[10px] text-gray-400">{{ formatTime(globalTotalDuration) }}</span>
             </div>
           </div>
         </div>
@@ -75,18 +65,25 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { Music, X, Play, Pause } from 'lucide-vue-next'
+import { useAudioPlayer } from '@/composables/useAudioPlayer'
 
 const isExpanded = ref(false)
 const hasInteracted = ref(false)
 const musicData = ref(null)
 
-const audioRef = ref(null)
-const isPlaying = ref(false)
-const currentTime = ref(0)
-const duration = ref(0)
-const progress = ref(0)
+const {
+  isPlaying: globalIsPlaying,
+  currentTime: globalCurrentTime,
+  totalDuration: globalTotalDuration,
+  currentSong: globalCurrentSong,
+  progressPercent,
+  playSong,
+  togglePlay: globalTogglePlay,
+  seek,
+  preload,
+} = useAudioPlayer()
 
 function expand() {
   isExpanded.value = true
@@ -95,38 +92,29 @@ function expand() {
 
 function collapse() {
   isExpanded.value = false
-  if (audioRef.value) audioRef.value.pause()
-  isPlaying.value = false
 }
 
 function togglePlay() {
-  if (!audioRef.value) return
-  if (isPlaying.value) {
-    audioRef.value.pause()
-    isPlaying.value = false
+  if (!musicData.value?.url) return
+  if (isCurrentSong()) {
+    globalTogglePlay()
   } else {
-    audioRef.value.play()
-    isPlaying.value = true
+    playSong({
+      url: musicData.value.url,
+      name: musicData.value.title || '背景音乐',
+      artist: "Candice's Mango Ode",
+    })
   }
 }
 
-function onTimeUpdate() {
-  if (!audioRef.value) return
-  currentTime.value = audioRef.value.currentTime
-  if (duration.value > 0) {
-    progress.value = (currentTime.value / duration.value) * 100
-  }
-}
-
-function onLoaded() {
-  if (audioRef.value) duration.value = audioRef.value.duration
+function isCurrentSong() {
+  return globalCurrentSong.value?.url === musicData.value?.url
 }
 
 function seekTo(e) {
-  if (!audioRef.value || !duration.value) return
   const rect = e.currentTarget.getBoundingClientRect()
   const ratio = (e.clientX - rect.left) / rect.width
-  audioRef.value.currentTime = ratio * duration.value
+  seek(ratio * 100)
 }
 
 function formatTime(s) {
@@ -136,15 +124,40 @@ function formatTime(s) {
   return m + ':' + String(sec).padStart(2, '0')
 }
 
+// 统一的音乐播放函数
+function autoPlayMusic() {
+  if (!musicData.value?.url) return
+  if (globalIsPlaying.value) return
+  playSong({
+    url: musicData.value.url,
+    name: musicData.value.title || '背景音乐',
+    artist: "Candice's Mango Ode",
+  })
+  localStorage.setItem('mg_music_played', '1')
+}
+
 onMounted(async () => {
+  // 获取音乐配置
   try {
     const res = await fetch('/api/public/homepage-items/MUSIC')
     const json = await res.json()
     if (json.code === 200 && json.data?.length > 0) {
       musicData.value = json.data[0].extraData || null
+      // 只在未播放时预加载，避免打断正在播放的音乐
+      if (musicData.value?.url && !globalIsPlaying.value) preload(musicData.value.url)
     }
-  } catch {
-    // no music configured
+  } catch {}
+
+  // 首次访问自动播放（桌面端可行）
+  if (musicData.value?.url && !localStorage.getItem('mg_music_played')) {
+    autoPlayMusic()
   }
+
+  // 监听欢迎页的"进入"事件（用户点击后触发，无障碍播放）
+  window.addEventListener('intro-enter', autoPlayMusic)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('intro-enter', autoPlayMusic)
 })
 </script>

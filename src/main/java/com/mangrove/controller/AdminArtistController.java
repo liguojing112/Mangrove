@@ -28,6 +28,7 @@ public class AdminArtistController {
                 .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND, "艺人不存在"));
 
         existing.setAvatarUrl(artist.getAvatarUrl());
+        existing.setAvatarImages(artist.getAvatarImages());
         existing.setSignatureImageUrl(artist.getSignatureImageUrl());
         existing.setBrandImageUrl(artist.getBrandImageUrl());
         existing.setBio(artist.getBio());

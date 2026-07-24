@@ -11,7 +11,7 @@
       <!-- Logo -->
       <div class="px-6 py-5 border-b border-gray-800 flex items-center justify-between">
         <router-link to="/admin" class="text-lg font-bold text-mangrove-400 tracking-wide">
-          青芒纪 Admin
+          Candice's Mango Ode Admin
         </router-link>
         <button class="md:hidden p-1 text-gray-400 hover:text-white" @click="sidebarOpen=false">
           <X class="w-5 h-5" />
@@ -75,6 +75,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 import {
   LayoutDashboard,
   Users,
@@ -93,10 +94,9 @@ import {
 const route = useRoute()
 const sidebarOpen = ref(false)
 
-const userRole = computed(() => {
-  const user = JSON.parse(localStorage.getItem('mangrove_user') || 'null')
-  return user?.role || ''
-})
+const { currentUser } = useAuth()
+
+const userRole = computed(() => currentUser.value?.role || '')
 
 const navItems = [
   { to: '/admin', label: '仪表盘', icon: LayoutDashboard },

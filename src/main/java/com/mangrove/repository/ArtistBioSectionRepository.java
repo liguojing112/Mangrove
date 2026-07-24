@@ -12,4 +12,6 @@ public interface ArtistBioSectionRepository extends JpaRepository<ArtistBioSecti
     List<ArtistBioSection> findByArtistIdAndStatusOrderBySortOrderAsc(Long artistId, Integer status);
 
     long countByArtistId(Long artistId);
+
+    List<ArtistBioSection> findByUserIdOrderByCreatedAtDesc(Long userId);
 }

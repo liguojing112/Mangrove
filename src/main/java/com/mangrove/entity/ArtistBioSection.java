@@ -19,6 +19,12 @@ public class ArtistBioSection {
     @Column(nullable = false)
     private Long artistId;
 
+    @Column(name = "user_id")
+    private Long userId;
+
+    @Column(name = "asker_nickname", length = 50)
+    private String askerNickname;
+
     @Column(nullable = false, length = 200)
     private String question;
 

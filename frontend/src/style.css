@@ -47,3 +47,15 @@
     max-height: 200px;
   }
 }
+
+/* 芒果树页面全屏模式：隐藏导航栏和页脚 */
+body.tree-fullscreen nav,
+body.tree-fullscreen footer {
+  display: none !important;
+}
+body.tree-fullscreen #app > div:not([class*="h-screen"]) {
+  min-height: 100vh;
+}
+body.tree-fullscreen main {
+  flex: 1 1 auto;
+}

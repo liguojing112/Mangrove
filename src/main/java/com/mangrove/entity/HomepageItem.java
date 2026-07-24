@@ -37,8 +37,8 @@ public class HomepageItem {
     @Column(name = "sort_order", nullable = false, columnDefinition = "INT DEFAULT 0")
     private Integer sortOrder;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "extra_data", columnDefinition = "JSON")
+    @Column(name = "extra_data", columnDefinition = "LONGTEXT")
+    @Convert(converter = com.mangrove.config.JsonMapConverter.class)
     private Map<String, Object> extraData;
 
     @Column(name = "created_at", nullable = false, columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")

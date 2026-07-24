@@ -9,9 +9,11 @@ import com.mangrove.dto.response.MusicAlbumDetailResponse;
 import com.mangrove.entity.MusicAlbumPhoto;
 import com.mangrove.entity.MusicPhotoAlbum;
 import com.mangrove.entity.MusicTrack;
+import com.mangrove.entity.SysUser;
 import com.mangrove.service.MusicCatalogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,10 +21,15 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/music")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('SUPER_ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
 public class AdminMusicCatalogController {
 
     private final MusicCatalogService musicCatalogService;
+
+    private boolean isSuperAdmin(Authentication auth) {
+        return auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN"));
+    }
 
     @GetMapping("/tracks")
     public Result<List<MusicTrack>> tracks() {
@@ -30,12 +37,14 @@ public class AdminMusicCatalogController {
     }
 
     @PostMapping("/tracks")
-    public Result<MusicTrack> createTrack(@RequestBody MusicTrackCatalogRequest request) {
+    public Result<MusicTrack> createTrack(@RequestBody MusicTrackCatalogRequest request, Authentication auth) {
+        if (!isSuperAdmin(auth)) request.setStatus(0);
         return Result.success(musicCatalogService.saveTrack(null, request));
     }
 
     @PutMapping("/tracks/{id}")
-    public Result<MusicTrack> updateTrack(@PathVariable Long id, @RequestBody MusicTrackCatalogRequest request) {
+    public Result<MusicTrack> updateTrack(@PathVariable Long id, @RequestBody MusicTrackCatalogRequest request, Authentication auth) {
+        if (!isSuperAdmin(auth)) request.setStatus(0);
         return Result.success(musicCatalogService.saveTrack(id, request));
     }
 

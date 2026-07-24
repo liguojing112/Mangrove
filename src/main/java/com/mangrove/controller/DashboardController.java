@@ -25,16 +25,36 @@ public class DashboardController {
     public Result<Map<String, Object>> dashboard() {
         Map<String, Object> data = new LinkedHashMap<>();
 
-        // 统计数据
         Map<String, Long> stats = new LinkedHashMap<>();
         stats.put("artistCount", artistRepository.count());
         stats.put("workCount", fanWorkRepository.count());
         stats.put("merchandiseCount", merchandiseRepository.count());
         stats.put("userCount", sysUserRepository.count());
-        stats.put("photoCount", mediaAssetRepository.countByCategoryAndStatus(
-                MediaAsset.Category.PHOTO, 1));
-        stats.put("videoCount", mediaAssetRepository.countByCategoryAndStatus(
-                MediaAsset.Category.VIDEO, 1));
+        
+        // 从 file_meta 统计照片和视频数量（非 media_assets）
+        long photoCount = 0;
+        long videoCount = 0;
+        try (java.sql.Connection conn = java.sql.DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/mangrove?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true",
+                "root", "root123")) {
+            java.sql.PreparedStatement ps = conn.prepareStatement(
+                "SELECT COUNT(*) FROM file_meta WHERE filename REGEXP ?");
+            ps.setString(1, "\\.(jpg|jpeg|png|gif|webp)$");
+            java.sql.ResultSet rs = ps.executeQuery();
+            if (rs.next()) photoCount = rs.getLong(1);
+            rs.close(); ps.close();
+            
+            ps = conn.prepareStatement(
+                "SELECT COUNT(*) FROM file_meta WHERE filename REGEXP ?");
+            ps.setString(1, "\\.(mp4|webm|mov|avi)$");
+            rs = ps.executeQuery();
+            if (rs.next()) videoCount = rs.getLong(1);
+            rs.close(); ps.close();
+        } catch (Exception e) {
+            // fallback
+        }
+        stats.put("photoCount", photoCount);
+        stats.put("videoCount", videoCount);
         data.put("stats", stats);
 
         // 最近上传

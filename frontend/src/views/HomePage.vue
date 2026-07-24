@@ -41,13 +41,46 @@
       </div>
     </div>
 
-    <!-- Top section: Carousel + Sidebar -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[520px]">
-      <div class="lg:col-span-2">
-        <PhotoCarousel />
+    <!-- 大横幅照片轮播 -->
+    <div class="mb-4">
+      <PhotoCarousel :slideTo="slideToCarousel" />
+    </div>
+
+    <!-- 三个视频播放窗口 -->
+    <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
+      <div v-for="(v, i) in videoCards" :key="i"
+        class="overflow-hidden bg-gray-900 aspect-video relative">
+        <!-- Video cover poster -->
+        <div v-if="!v.url || videoCoverShowing[i]" class="absolute inset-0 z-10 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-300"
+          :style="{ background: v.background }"
+          @click.stop="playCardVideo(i)">
+          <component :is="v.icon" :size="32" class="text-white/50 mb-1" />
+          <span class="text-white/80 text-xs font-medium">{{ v.kicker }}</span>
+          <span class="text-white/60 text-[10px] mt-0.5">{{ v.heading }}</span>
+        </div>
+        <video v-if="v.url" :ref="el => videoRefs[i] = el" :src="v.url" muted playsinline webkit-playsinline preload="auto"
+          class="w-full h-full object-cover relative z-0"
+          @loadeddata="videoCoverShowing[i] = false"
+          @error="videoCoverShowing[i] = true" />
       </div>
-      <div class="lg:col-span-1">
-        <StageSidebar />
+    </div>
+
+    <!-- 绝美舞台（极简列表） -->
+    <div class="mb-6">
+      <h3 class="font-semibold text-xs text-gray-500 mb-2">绝美舞台</h3>
+      <div class="space-y-1">
+        <div v-for="(v, i) in homepageVideos" :key="'stage-'+i"
+          class="flex items-center gap-2 rounded-lg bg-gray-900 cursor-pointer h-12 px-2"
+          :class="activeVideoIdx === i ? 'ring-1 ring-white/40' : ''"
+          @click.stop="playCardVideo(i)"
+          @touchend.stop.prevent="playCardVideo(i)">
+          <div class="w-16 h-full flex items-center justify-center flex-shrink-0 rounded"
+            :style="{ background: videoCards[i]?.background || '#374151' }">
+            <Play :size="14" class="text-white/60" fill="white" />
+          </div>
+          <span class="text-xs text-white truncate flex-1">{{ v.title }}</span>
+          <span class="text-[10px] text-white/30">{{ String(i + 1).padStart(2, '0') }}</span>
+        </div>
       </div>
     </div>
 
@@ -57,7 +90,7 @@
     </div>
 
     <!-- Feature cards -->
-    <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="mt-12 grid grid-cols-2 md:grid-cols-4 gap-6">
       <router-link to="/artists" class="backdrop-blur-sm bg-white/80 dark:bg-gray-900/80 border border-gray-200/50 rounded-2xl p-6 text-center block transition-shadow hover:shadow-lg hover:shadow-mangrove-500/10">
         <Users class="w-10 h-10 text-mangrove-600 mx-auto mb-4" />
         <h3 class="font-semibold text-pink-300">艺人档案</h3>
@@ -72,6 +105,11 @@
         <TreePine class="w-10 h-10 text-mangrove-600 mx-auto mb-4" />
         <h3 class="font-semibold text-pink-300">芒果树养成</h3>
         <p class="text-sm text-gray-500 mt-2">每日签到，培育专属芒果树</p>
+      </router-link>
+      <router-link to="/community" class="backdrop-blur-sm bg-white/80 dark:bg-gray-900/80 border border-gray-200/50 rounded-2xl p-6 text-center block transition-shadow hover:shadow-lg hover:shadow-mangrove-500/10">
+        <Mail class="w-10 h-10 text-mangrove-600 mx-auto mb-4" />
+        <h3 class="font-semibold text-pink-300">信箱</h3>
+        <p class="text-sm text-gray-500 mt-2">给艺人写一封信，留下你的心声</p>
       </router-link>
     </div>
 
@@ -97,17 +135,92 @@
 
     <!-- Music player (fixed position, renders here) -->
     <MusicPlayer />
+
+    <!-- 右下角信箱按钮（可拖动） -->
+    <div
+      class="fixed z-40 w-[33vw] h-[33vw] max-w-[140px] max-h-[140px] rounded-full bg-transparent flex items-center justify-center shadow-none active:scale-95 cursor-grab select-none"
+      :style="mailStyle"
+      @mousedown="startDrag($event, 'mail')"
+      @touchstart.stop="startDrag($event, 'mail')"
+    >
+      <img src="/mail-btn.png" class="w-full h-full rounded-full object-cover pointer-events-none" />
+    </div>
   </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { Users, PenTool, TreePine, X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { Users, PenTool, TreePine, X, ChevronLeft, ChevronRight, Video, Film, Music, Sparkles, Star, Play, Mail } from 'lucide-vue-next'
 import PhotoCarousel from '@/components/home/PhotoCarousel.vue'
-import StageSidebar from '@/components/home/StageSidebar.vue'
 import CalendarBar from '@/components/home/CalendarBar.vue'
 import MusicPlayer from '@/components/home/MusicPlayer.vue'
+
+const router = useRouter()
+
+// ── 可拖动按钮逻辑 ──
+const dragState = ref({ active: false, which: '', startX: 0, startY: 0, initX: 0, initY: 0, moved: false })
+
+const mailPos = ref({ x: window.innerWidth - 64, y: window.innerHeight - 178 })
+const mailStyle = computed(() => ({
+  left: mailPos.value.x + 'px',
+  top: mailPos.value.y + 'px',
+  transition: dragState.value.active && dragState.value.which === 'mail' ? 'none' : 'all 0.2s ease',
+}))
+
+function startDrag(e, which) {
+  const pos = which === 'mail' ? mailPos.value : null
+  if (!pos) return
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY
+  dragState.value = { active: true, which, startX: clientX, startY: clientY, initX: pos.x, initY: pos.y, moved: false }
+  document.addEventListener('mousemove', onDrag)
+  document.addEventListener('mouseup', endDrag)
+  document.addEventListener('touchmove', onDrag, { passive: false })
+  document.addEventListener('touchend', endDrag)
+}
+
+function onDrag(e) {
+  if (!dragState.value.active) return
+  e.preventDefault()
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY
+  const dx = clientX - dragState.value.startX
+  const dy = clientY - dragState.value.startY
+  if (Math.abs(dx) > 5 || Math.abs(dy) > 5) dragState.value.moved = true
+  const pos = dragState.value.which === 'mail' ? mailPos.value : null
+  if (pos) {
+    pos.x = Math.max(0, Math.min(window.innerWidth - 48, dragState.value.initX + dx))
+    pos.y = Math.max(0, Math.min(window.innerHeight - 48, dragState.value.initY + dy))
+  }
+}
+
+function endDrag() {
+  const wasMoved = dragState.value.moved
+  dragState.value.active = false
+  document.removeEventListener('mousemove', onDrag)
+  document.removeEventListener('mouseup', endDrag)
+  document.removeEventListener('touchmove', onDrag)
+  document.removeEventListener('touchend', endDrag)
+  if (!wasMoved) {
+    // 没有拖动，视为点击
+    setTimeout(() => {
+      if (dragState.value.which === 'mail') router.push('/community')
+    }, 10)
+  } else {
+    localStorage.setItem('mangrove_mail_pos', JSON.stringify(mailPos.value))
+  }
+}
+
+// 读取保存的位置
+function loadPositions() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('mangrove_mail_pos'))
+    if (saved) mailPos.value = saved
+  } catch {}
+}
+loadPositions()
 
 // 站点统计
 const siteStats = ref({ fanCount: 0, artistCount: 0, workCount: 0, merchandiseCount: 0 })
@@ -154,6 +267,63 @@ const showNotice = ref(true)
 const currentNotice = ref(0)
 const notices = ref([])
 
+// 首页视频
+const homepageVideos = ref([
+  { title: '舞台瞬间', url: '' },
+  { title: '路透精选', url: '' },
+  { title: '日常碎片', url: '' },
+])
+
+const slideToCarousel = ref(-1)
+const activeVideoIdx = ref(-1)
+const videoRefs = ref([])
+const videoCoverShowing = ref([true, true, true])
+
+function playCardVideo(i) {
+  activeVideoIdx.value = i
+  slideToCarousel.value = i
+  videoCoverShowing.value[i] = false
+  const v = videoRefs.value[i]
+  if (v) {
+    v.currentTime = 0
+    v.play().catch(() => {})
+  }
+}
+
+const videoCards = computed(() => {
+  const defs = [
+    { kicker: 'STAGE', heading: '舞台瞬间', subtitle: '聚光灯下的每一个精彩', icon: Sparkles, background: 'linear-gradient(135deg, #0f2b1a 0%, #1b6842 50%, #3ec97a 100%)', shadow: '0 8px 24px rgba(15,71,43,0.4)', glow: 'rgba(138,255,164,0.4)' },
+    { kicker: 'BEHIND', heading: '路透精选', subtitle: '镜头背后的温暖瞬间', icon: Star, background: 'linear-gradient(135deg, #1a1035 0%, #3b2d6e 50%, #7c5ce0 100%)', shadow: '0 8px 24px rgba(60,35,110,0.4)', glow: 'rgba(160,140,255,0.4)' },
+    { kicker: 'DAILY', heading: '日常碎片', subtitle: '记录生活中的点点滴滴', icon: Music, background: 'linear-gradient(135deg, #3d1e0f 0%, #b85c1e 50%, #f59e4b 100%)', shadow: '0 8px 24px rgba(150,70,20,0.4)', glow: 'rgba(255,180,100,0.4)' },
+  ]
+  return defs.map((def, i) => ({
+    ...def,
+    url: homepageVideos.value[i]?.url || '',
+    title: homepageVideos.value[i]?.title || def.heading,
+  }))
+})
+
+async function fetchHomepageVideos() {
+  try {
+    // 直接从文件列表获取视频
+    const res = await fetch('/api/files/list').catch(() => null)
+    if (res?.ok) {
+      const j = await res.json()
+      if (j.code === 200 && j.data?.length) {
+        const videoFiles = j.data.filter(f => /\.(mp4|webm|mov)$/i.test(f.filename || ''))
+	        if (videoFiles.length > 0) {
+	          homepageVideos.value = [
+	            { title: '舞台瞬间', url: videoFiles[0]?.url || '' },
+	            { title: '路透精选', url: videoFiles[1]?.url || videoFiles[0]?.url || '' },
+	            { title: '日常碎片', url: videoFiles[2]?.url || videoFiles[0]?.url || '' },
+	          ]
+	          videoCoverShowing.value = [true, true, true]
+	        }
+      }
+    }
+  } catch {}
+}
+
 async function fetchNotices() {
   try {
     const res = await fetch('/api/public/announcements')
@@ -188,6 +358,7 @@ function manualPrev() { prevNotice(); startNoticeRotation() }
 onMounted(async () => {
   fetchStats()
   fetchHomepageConfig()
+  fetchHomepageVideos()
   await fetchNotices()
   startNoticeRotation()
 })

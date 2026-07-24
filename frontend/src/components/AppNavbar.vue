@@ -4,11 +4,11 @@
       <div class="flex items-center justify-between h-16">
         <router-link to="/" class="flex items-center gap-1.5 shrink-0">
           <span class="text-2xl">🥭</span>
-          <span class="text-mangrove-400 font-bold text-xl">青芒纪</span>
+          <span class="text-mangrove-400 font-bold text-xl">Candice's Mango Ode</span>
         </router-link>
 
         <!-- 桌面端钢琴键标签（居中） -->
-        <div class="hidden md:flex items-center justify-center flex-1">
+        <div v-show="!isCollapsed" class="hidden md:flex items-center justify-center flex-1">
           <template v-for="(tab, idx) in tabs" :key="tab.to">
             <!-- 芒果树：顶部弧线钢琴键 -->
             <router-link v-if="tab.special" :to="tab.to"
@@ -24,6 +24,14 @@
             </router-link>
           </template>
         </div>
+
+        <!-- 折叠按钮 -->
+        <button @click="toggleCollapse"
+          class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+          :title="isCollapsed ? '展开导航栏' : '折叠导航栏'">
+          <ChevronUp v-if="!isCollapsed" :size="18" />
+          <ChevronDown v-else :size="18" />
+        </button>
 
         <!-- 右侧用户菜单 -->
         <div class="relative">
@@ -55,7 +63,7 @@
     </div>
 
     <!-- 手机端横滑标签栏 -->
-    <div class="md:hidden overflow-x-auto border-t border-gray-800 bg-gray-900/95 touch-pan-x" data-tabs="mobile"
+    <div v-show="!isCollapsed" class="md:hidden overflow-x-auto border-t border-gray-800 bg-gray-900/95 touch-pan-x" data-tabs="mobile"
       @touchstart.stop @touchend.stop>
       <div class="flex items-center gap-0 px-2 py-1">
         <template v-for="tab in tabs" :key="tab.to">
@@ -80,13 +88,19 @@
 <script setup>
 import { ref, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Menu, User, TreePine, Settings, LogOut, LogIn, UserPlus } from 'lucide-vue-next'
+import { Menu, User, TreePine, Settings, LogOut, LogIn, UserPlus, ChevronUp, ChevronDown } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
 
 const route = useRoute()
 const router = useRouter()
 const { isLoggedIn, isAdmin, currentUser, logout } = useAuth()
 const showRightMenu = ref(false)
+const isCollapsed = ref(localStorage.getItem('mangrove_nav_collapsed') === 'true')
+
+function toggleCollapse() {
+  isCollapsed.value = !isCollapsed.value
+  localStorage.setItem('mangrove_nav_collapsed', isCollapsed.value)
+}
 
 const tabs = [
   { label: '首页', to: '/' },

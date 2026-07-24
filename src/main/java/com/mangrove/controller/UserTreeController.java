@@ -28,6 +28,7 @@ public class UserTreeController {
     private final TreeDecorationRepository treeDecorationRepository;
     private final UserDecorationRepository userDecorationRepository;
     private final TreeJournalRepository treeJournalRepository;
+    private final com.mangrove.repository.BarrageMessageRepository barrageMessageRepository;
 
     @GetMapping("/my")
     public Result<UserTree> getMyTree(Authentication authentication) {
@@ -55,6 +56,24 @@ public class UserTreeController {
     @Transactional
     public Result<UserTree> checkin(Authentication authentication) {
         SysUser user = getCurrentUser(authentication);
+        return doCheckin(user);
+    }
+
+    @PostMapping("/checkin-for/{username}")
+    @Transactional
+    public Result<String> checkinFor(@PathVariable String username, Authentication authentication) {
+        SysUser helper = getCurrentUser(authentication);
+        SysUser target = sysUserRepository.findByUsername(username)
+                .orElseGet(() -> sysUserRepository.findByNickname(username)
+                        .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND, "用户不存在")));
+        if (target.getId().equals(helper.getId())) {
+            throw new BusinessException("请直接使用自己的签到按钮");
+        }
+        doCheckin(target);
+        return Result.success("成功帮 " + target.getNickname() + " 签到！");
+    }
+
+    private Result<UserTree> doCheckin(SysUser user) {
         LocalDate today = LocalDate.now();
 
         if (checkinRecordRepository.findByUserIdAndCheckinDate(user.getId(), today).isPresent()) {
@@ -66,8 +85,9 @@ public class UserTreeController {
 
         // 连续签到判定
         LocalDate yesterday = today.minusDays(1);
+        int prevConsecutive = tree.getConsecutiveDays() != null ? tree.getConsecutiveDays() : 0;
         if (checkinRecordRepository.findByUserIdAndCheckinDate(user.getId(), yesterday).isPresent()) {
-            tree.setConsecutiveDays(tree.getConsecutiveDays() + 1);
+            tree.setConsecutiveDays(prevConsecutive + 1);
         } else {
             tree.setConsecutiveDays(1);
         }
@@ -81,12 +101,13 @@ public class UserTreeController {
         checkinRecordRepository.save(record);
 
         // 累计签到天数（只增不减）
-        tree.setTotalCheckins(tree.getTotalCheckins() + 1);
+        int prev = tree.getTotalCheckins() != null ? tree.getTotalCheckins() : 0;
+        tree.setTotalCheckins(prev + 1);
 
         // 经验 + 积分
         int basePoints = 10;
         int bonusPoints = 0;
-        int consecutive = tree.getConsecutiveDays();
+        int consecutive = tree.getConsecutiveDays() != null ? tree.getConsecutiveDays() : 1;
         if (consecutive % 30 == 0) {
             bonusPoints = 200;
         } else if (consecutive % 7 == 0) {
@@ -94,18 +115,22 @@ public class UserTreeController {
         }
         int totalPointsEarned = basePoints + bonusPoints;
 
-        tree.setExperience(tree.getExperience() + 10);
-        tree.setPoints(tree.getPoints() + totalPointsEarned);
-        tree.setTotalPoints(tree.getTotalPoints() + totalPointsEarned);
+        tree.setExperience((tree.getExperience() != null ? tree.getExperience() : 0) + 10);
+        tree.setPoints((tree.getPoints() != null ? tree.getPoints() : 0) + totalPointsEarned);
+        tree.setTotalPoints((tree.getTotalPoints() != null ? tree.getTotalPoints() : 0) + totalPointsEarned);
         tree.setLastCheckinAt(today);
 
         // 自动升级
-        int requiredExp = tree.getLevel() * 100;
-        while (tree.getExperience() >= requiredExp) {
-            tree.setExperience(tree.getExperience() - requiredExp);
-            tree.setLevel(tree.getLevel() + 1);
-            requiredExp = tree.getLevel() * 100;
+        Long currentExp = tree.getExperience() != null ? tree.getExperience() : 0L;
+        int currentLevel = tree.getLevel() != null ? tree.getLevel() : 1;
+        long requiredExp = (long) currentLevel * 100;
+        while (currentExp >= requiredExp) {
+            currentExp -= requiredExp;
+            currentLevel++;
+            requiredExp = (long) currentLevel * 100;
         }
+        tree.setExperience(currentExp);
+        tree.setLevel(currentLevel);
 
         userTreeRepository.save(tree);
         return Result.success(tree);
@@ -192,6 +217,103 @@ public class UserTreeController {
             throw new BusinessException(ResultCode.FORBIDDEN, "无权删除他人的记事");
         }
         treeJournalRepository.deleteById(id);
+        return Result.success(null);
+    }
+
+    @GetMapping("/recent-checkins")
+    public Result<List<Map<String, String>>> recentCheckins() {
+        PageRequest top20 = PageRequest.of(0, 20, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "id"));
+        List<CheckinRecord> records = checkinRecordRepository.findAll(top20).getContent();
+        List<Map<String, String>> names = records.stream()
+                .map(r -> Map.of("nickname", r.getUser().getNickname(), "publicId", r.getUser().getPublicId()))
+                .collect(java.util.stream.Collectors.toList());
+        return Result.success(names);
+    }
+
+    @GetMapping("/ranking")
+    public Result<List<Map<String, Object>>> ranking(Authentication authentication) {
+        // 任何登录用户都可以查看排行榜
+        if (authentication == null) throw new BusinessException(ResultCode.UNAUTHORIZED, "请先登录");
+        List<UserTree> trees = userTreeRepository.findTop20ByOrderByTotalPointsDesc();
+        List<Map<String, Object>> list = trees.stream()
+                .map(t -> {
+                    Map<String, Object> item = new java.util.LinkedHashMap<>();
+                    item.put("nickname", t.getUser().getNickname());
+                    item.put("publicId", t.getUser().getPublicId());
+                    item.put("totalPoints", t.getTotalPoints());
+                    item.put("totalCheckins", t.getTotalCheckins());
+                    item.put("consecutiveDays", t.getConsecutiveDays());
+                    item.put("level", t.getLevel());
+                    return item;
+                })
+                .collect(java.util.stream.Collectors.toList());
+        return Result.success(list);
+    }
+
+    // ========== 弹幕 ==========
+    @GetMapping("/barrage")
+    public Result<List<Map<String, Object>>> getBarrage() {
+        List<BarrageMessage> messages = barrageMessageRepository
+                .findAllByOrderByCreatedAtDesc(PageRequest.of(0, 30));
+        List<Map<String, Object>> list = messages.stream()
+                .map(m -> {
+                    Map<String, Object> item = new java.util.LinkedHashMap<>();
+                    item.put("id", m.getId());
+                    item.put("content", m.getContent());
+                    item.put("nickname", m.getNickname());
+                    item.put("publicId", m.getPublicId() != null ? m.getPublicId() : "");
+                    item.put("likeCount", m.getLikeCount() != null ? m.getLikeCount() : 0);
+                    item.put("userId", m.getUserId());
+                    return item;
+                })
+                .collect(java.util.stream.Collectors.toList());
+        return Result.success(list);
+    }
+
+    @PostMapping("/barrage")
+    public Result<Void> postBarrage(@RequestBody Map<String, String> body, Authentication authentication) {
+        String content = body.get("content");
+        if (content == null || content.isBlank()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "弹幕内容不能为空");
+        }
+        if (content.length() > 100) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "弹幕内容最多100字");
+        }
+
+        SysUser user = getCurrentUser(authentication);
+        BarrageMessage msg = BarrageMessage.builder()
+                .content(content.trim())
+                .nickname(user.getNickname())
+                .publicId(user.getPublicId())
+                .userId(user.getId())
+                .likeCount(0)
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
+        barrageMessageRepository.save(msg);
+        return Result.success(null);
+    }
+
+    @PostMapping("/barrage/{id}/like")
+    public Result<Void> likeBarrage(@PathVariable Long id, Authentication authentication) {
+        BarrageMessage msg = barrageMessageRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND, "弹幕不存在"));
+        msg.setLikeCount(msg.getLikeCount() + 1);
+        barrageMessageRepository.save(msg);
+        return Result.success(null);
+    }
+
+    @DeleteMapping("/barrage/{id}")
+    public Result<Void> deleteBarrage(@PathVariable Long id, Authentication authentication) {
+        SysUser user = getCurrentUser(authentication);
+        BarrageMessage msg = barrageMessageRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND, "弹幕不存在"));
+        // 只有本人或管理员可删
+        boolean isOwner = msg.getUserId() != null && msg.getUserId().equals(user.getId());
+        boolean isAdmin = user.getRole() == SysUser.Role.ADMIN || user.getRole() == SysUser.Role.SUPER_ADMIN;
+        if (!isOwner && !isAdmin) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "无权删除此弹幕");
+        }
+        barrageMessageRepository.deleteById(id);
         return Result.success(null);
     }
 

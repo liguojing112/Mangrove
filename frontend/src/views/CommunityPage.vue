@@ -48,9 +48,7 @@
       >
         <!-- Post Header -->
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-mangrove-200 flex items-center justify-center">
-            <User class="w-5 h-5 text-mangrove-700" />
-          </div>
+          <UserAvatar :public-id="comment.user?.publicId" :username="comment.user?.nickname" size="md" />
           <div>
             <span class="font-medium text-gray-900 text-sm">{{ comment.user?.nickname || '匿名用户' }}</span>
             <span class="text-xs text-gray-400 ml-2">{{ formatTime(comment.createdAt) }}</span>
@@ -70,11 +68,33 @@
             <Heart class="w-3.5 h-3.5" :class="comment.liked ? 'fill-pink-500 text-pink-500' : ''" />
             <span>{{ comment.likeCount || 0 }}</span>
           </button>
+          <button
+            v-if="isLoggedIn"
+            class="flex items-center gap-1 hover:text-mangrove-600 transition-colors"
+            @click="toggleReply(comment)"
+          >
+            <MessageCircle class="w-3.5 h-3.5" />
+            <span>回复</span>
+          </button>
+        </div>
+
+        <!-- Reply Input -->
+        <div v-if="replyTarget === comment.id" class="mt-3 ml-3">
+          <textarea
+            v-model="replyContent"
+            placeholder="写下你的回复..."
+            class="w-full rounded-xl border border-gray-200 p-2 text-xs min-h-[50px] resize-none focus:outline-none focus:ring-1 focus:ring-mangrove-400"
+          ></textarea>
+          <div class="flex justify-end gap-2 mt-2">
+            <button class="text-xs text-gray-400 hover:text-gray-600" @click="cancelReply">取消</button>
+            <button class="text-xs bg-mangrove-500 text-white px-3 py-1 rounded-full hover:bg-mangrove-600 disabled:opacity-40" :disabled="!replyContent.trim() || replySending" @click="sendReply(comment)">{{ replySending ? '发送中...' : '发送' }}</button>
+          </div>
         </div>
 
         <!-- Replies -->
         <div v-if="comment.children && comment.children.length > 0" class="ml-12 border-l-2 border-gray-100 pl-4 mt-3 space-y-2">
-          <div v-for="reply in comment.children" :key="reply.id" class="text-sm text-gray-600">
+          <div v-for="reply in comment.children" :key="reply.id" class="text-sm text-gray-600 flex items-start gap-2">
+            <UserAvatar :public-id="reply.user?.publicId" :username="reply.user?.nickname" size="xs" class="mt-0.5" />
             <span class="font-medium">{{ reply.user?.nickname || '匿名用户' }}：</span>
             <span>{{ reply.content }}</span>
           </div>
@@ -99,6 +119,7 @@
 import { ref, onMounted } from 'vue'
 import { User, Heart, MessageCircle, Image as ImageIcon } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
+import UserAvatar from '@/components/UserAvatar.vue'
 
 const { isLoggedIn, currentUser, getToken } = useAuth()
 
@@ -110,6 +131,9 @@ const uploading = ref(false)
 const loading = ref(false)
 const page = ref(0)
 const hasMore = ref(true)
+const replyTarget = ref(null)
+const replyContent = ref('')
+const replySending = ref(false)
 
 function handleImageSelect(e) {
   const file = e.target.files[0]
@@ -220,6 +244,51 @@ async function toggleLike(comment) {
 function loadMore() {
   page.value++
   fetchComments()
+}
+
+function toggleReply(comment) {
+  if (replyTarget.value === comment.id) {
+    cancelReply()
+  } else {
+    replyTarget.value = comment.id
+    replyContent.value = ''
+  }
+}
+
+function cancelReply() {
+  replyTarget.value = null
+  replyContent.value = ''
+}
+
+async function sendReply(parent) {
+  if (!replyContent.value.trim() || replySending.value) return
+  replySending.value = true
+  try {
+    const res = await fetch('/api/comments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify({
+        targetType: 'COMMUNITY',
+        targetId: 1,
+        content: replyContent.value.trim(),
+        parentId: parent.id
+      })
+    })
+    const json = await res.json()
+    if (json.code === 200) {
+      replyTarget.value = null
+      replyContent.value = ''
+      page.value = 0
+      await fetchComments()
+    }
+  } catch (e) {
+    console.error('回复失败:', e)
+  } finally {
+    replySending.value = false
+  }
 }
 
 function formatTime(dateStr) {

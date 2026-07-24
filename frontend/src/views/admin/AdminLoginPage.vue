@@ -6,7 +6,7 @@
         <div class="w-12 h-12 rounded-2xl bg-mangrove-700 flex items-center justify-center mx-auto mb-4">
           <Settings class="w-6 h-6 text-white" />
         </div>
-        <h1 class="text-xl font-bold text-gray-900">青芒纪 管理后台</h1>
+        <h1 class="text-xl font-bold text-gray-900">Candice's Mango Ode 管理后台</h1>
         <p class="text-sm text-gray-500 mt-1">请登录管理员账号</p>
       </div>
 

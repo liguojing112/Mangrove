@@ -77,7 +77,7 @@
             type="text"
             placeholder="用户名"
             required
-            minlength="3"
+            minlength="1"
             class="w-full rounded-xl border border-gray-200 pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-mangrove-500 focus:border-transparent"
           />
         </div>

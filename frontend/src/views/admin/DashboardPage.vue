@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Stats -->
-    <div class="grid grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-8">
       <div v-for="stat in stats" :key="stat.label" class="card p-5 flex items-start justify-between">
         <div>
           <p class="text-3xl font-bold text-gray-900">{{ stat.value }}</p>
@@ -131,12 +131,50 @@
       </div>
     </div>
 
+    <!-- 开场动画设置 -->
+    <div class="card p-5 mb-8">
+      <h2 class="text-sm font-semibold text-gray-800 mb-1">🎬 开场欢迎动画</h2>
+      <p class="text-xs text-gray-400 mb-4">上传视频文件（手机端可能受限于浏览器策略无法自动播放，建议压缩到 500KB 以内）+ 上传一张封面图作为兜底展示</p>
+      <div class="flex items-start gap-6">
+        <div class="w-48 h-32 rounded-xl overflow-hidden bg-gray-900 border border-gray-200 flex items-center justify-center shrink-0">
+          <video v-if="introAnimUrl" :src="introAnimUrl" muted preload="metadata" class="w-full h-full object-cover" @loadeddata="$event.target.currentTime=0.5" />
+          <img v-else-if="introPosterUrl" :src="introPosterUrl" class="w-full h-full object-cover" />
+          <Clapperboard v-else class="w-8 h-8 text-gray-600" />
+        </div>
+        <div class="flex-1">
+          <p class="text-sm text-gray-600 mb-3">视频：支持 MP4/WEBM，建议高度压缩到 500KB 以内以确保手机端顺利加载</p>
+          <div class="flex items-center gap-3 mb-3">
+            <label class="btn-outline text-sm cursor-pointer flex items-center gap-2">
+              <Upload class="w-4 h-4" /> {{ introAnimUrl ? '更换动画' : '上传动画' }}
+              <input type="file" accept="video/mp4,video/webm" class="hidden" @change="handleIntroAnimUpload" />
+            </label>
+            <button v-if="introAnimUrl" class="btn-outline text-sm text-red-500 flex items-center gap-2" @click="removeIntroAnim">
+              <Trash2 class="w-4 h-4" /> 移除
+            </button>
+            <span v-if="introAnimUploading" class="text-sm text-gray-400">上传中...</span>
+            <span v-else-if="introAnimUrl" class="text-sm text-green-600 flex items-center gap-1"><CheckCircle class="w-4 h-4" /> 已设置</span>
+          </div>
+          <p class="text-sm text-gray-600 mb-1">封面图（兜底展示，视频无法播放时显示）：</p>
+          <div class="flex items-center gap-3">
+            <label class="btn-outline text-sm cursor-pointer flex items-center gap-2">
+              <Image class="w-4 h-4" /> {{ introPosterUrl ? '更换封面' : '上传封面' }}
+              <input type="file" accept="image/*" class="hidden" @change="handleIntroPosterUpload" />
+            </label>
+            <button v-if="introPosterUrl" class="btn-outline text-sm text-red-500 flex items-center gap-2" @click="removeIntroPoster">✕ 移除</button>
+            <span v-if="introPosterUploading" class="text-sm text-gray-400">上传中...</span>
+            <span v-else-if="introPosterUrl" class="text-sm text-green-600">✓</span>
+          </div>
+          <p v-if="introAnimMsg" class="text-xs mt-2" :class="introAnimMsg.startsWith('✓') ? 'text-green-600' : 'text-red-500'">{{ introAnimMsg }}</p>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { Users, PenTool, Gift, FileText, ShieldCheck, Upload, Image, CheckCircle, FolderOpen, TreePine, Trash2, Sparkles, Star, Sun, MapPin, Eye } from 'lucide-vue-next'
+import { Users, PenTool, Gift, FileText, ShieldCheck, Upload, Image, CheckCircle, FolderOpen, TreePine, Trash2, Sparkles, Star, Sun, MapPin, Eye, Clapperboard } from 'lucide-vue-next'
 
 const stats = ref([
   { label: '艺人', value: 0, icon: Users },
@@ -169,21 +207,25 @@ async function fetchHeroCards() {
       headers: { Authorization: `Bearer ${getToken()}` }
     })
     const json = await res.json()
-    if (json.code === 200 && Array.isArray(json.data)) {
-      json.data.forEach((url, i) => {
-        if (i < heroCards.length && url) heroCards[i].url = url
-      })
+    if (json.code === 200 && json.data) {
+      const urls = JSON.parse(json.data)
+      if (Array.isArray(urls)) {
+        urls.forEach((url, i) => {
+          if (i < heroCards.length && url) heroCards[i].url = url
+        })
+      }
     }
   } catch {}
 }
 
 async function saveHeroCards() {
   const urls = heroCards.map(c => c.url || '')
-  await fetch('/api/admin/config/photos_hero_cards', {
+  const res = await fetch('/api/admin/config/photos_hero_cards', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
     body: JSON.stringify({ value: JSON.stringify(urls) })
   })
+  if (!res.ok) throw new Error(`保存失败(${res.status})`)
 }
 
 async function handleHeroCardUpload(idx, e) {
@@ -354,10 +396,130 @@ async function removeLittleTreeBg() {
   }
 }
 
+// 开场动画
+const introAnimUrl = ref('')
+const introAnimUploading = ref(false)
+const introAnimMsg = ref('')
+const introPosterUrl = ref('')
+const introPosterUploading = ref(false)
+
+async function fetchIntroAnim() {
+  try {
+    const res = await fetch('/api/admin/config/intro_animation_url', {
+      headers: { Authorization: `Bearer ${getToken()}` }
+    })
+    const json = await res.json()
+    if (json.code === 200 && json.data) introAnimUrl.value = json.data
+  } catch {}
+  try {
+    const res = await fetch('/api/admin/config/intro_poster_url', {
+      headers: { Authorization: `Bearer ${getToken()}` }
+    })
+    const json = await res.json()
+    if (json.code === 200 && json.data) introPosterUrl.value = json.data
+  } catch {}
+}
+
+async function handleIntroAnimUpload(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  introAnimUploading.value = true
+  introAnimMsg.value = ''
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch('/api/files/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${getToken()}` },
+      body: formData
+    })
+    const json = await res.json()
+    if (json.code !== 200) throw new Error(json.msg || '上传失败')
+    const url = json.data.url
+    await fetch('/api/admin/config/intro_animation_url', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ value: url })
+    })
+    introAnimUrl.value = url
+    introAnimMsg.value = '✓ 开场动画已更新'
+    setTimeout(() => { introAnimMsg.value = '' }, 3000)
+  } catch (err) {
+    introAnimMsg.value = '✗ ' + err.message
+  } finally {
+    introAnimUploading.value = false
+    e.target.value = ''
+  }
+}
+
+async function removeIntroAnim() {
+  if (!confirm('确认移除开场动画？')) return
+  try {
+    await fetch('/api/admin/config/intro_animation_url', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ value: '' })
+    })
+    introAnimUrl.value = ''
+    introAnimMsg.value = '✓ 开场动画已移除'
+    setTimeout(() => { introAnimMsg.value = '' }, 3000)
+  } catch (err) {
+    introAnimMsg.value = '✗ ' + err.message
+  }
+}
+
+async function handleIntroPosterUpload(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  introPosterUploading.value = true
+  introAnimMsg.value = ''
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch('/api/files/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${getToken()}` },
+      body: formData
+    })
+    const json = await res.json()
+    if (json.code !== 200) throw new Error(json.msg || '上传失败')
+    const url = json.data.url
+    await fetch('/api/admin/config/intro_poster_url', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ value: url })
+    })
+    introPosterUrl.value = url
+    introAnimMsg.value = '✓ 封面图已更新'
+    setTimeout(() => { introAnimMsg.value = '' }, 3000)
+  } catch (err) {
+    introAnimMsg.value = '✗ ' + err.message
+  } finally {
+    introPosterUploading.value = false
+    e.target.value = ''
+  }
+}
+
+async function removeIntroPoster() {
+  try {
+    await fetch('/api/admin/config/intro_poster_url', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ value: '' })
+    })
+    introPosterUrl.value = ''
+    introAnimMsg.value = '✓ 封面图已移除'
+    setTimeout(() => { introAnimMsg.value = '' }, 3000)
+  } catch (err) {
+    introAnimMsg.value = '✗ ' + err.message
+  }
+}
+
 onMounted(async () => {
   fetchTreeBg()
   fetchLittleTreeBg()
   fetchHeroCards()
+  fetchIntroAnim()
   try {
     const res = await fetch('/api/admin/dashboard', {
       headers: { 'Authorization': `Bearer ${getToken()}` }
