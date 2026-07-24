@@ -284,9 +284,19 @@ npm run dev
 
 ## 📄 许可证
 
-本项目为非公开的私有项目，仅供学习和内部使用。未经授权，禁止复制、分发或用于商业用途。
+本项目基于 **MIT License** 开源 —— 详见 [LICENSE](./LICENSE) 文件。
 
 版权所有 © 2026 [liguojing112](https://github.com/liguojing112)
+
+### 🎨 美工致谢
+
+以下页面由美工老师 **dan45** 设计美化：
+- **导航栏**（AppNavbar.vue）— 胶囊导航设计
+- **首页**（HomePage.vue）— 飘动音符粒子效果
+- **芒果树页面**（MyTreePage.vue）— 飘落音符粒子效果
+- **短视频页面**（VideosPage.vue）— 视频封面与海报优化
+- **日历组件**（CalendarBar.vue）— 倒计时琴键纹理
+- **资源管理**（ResourceManager.vue）— 视频缩略图优化
 
 ---
 
