@@ -2,40 +2,39 @@
   <div class="relative overflow-hidden min-h-screen" :style="pageBgStyle">
     <!-- 背景遮罩：确保内容可读 -->
     <div v-if="bgUrl" class="absolute inset-0 bg-black/40 pointer-events-none" />
-    <!-- 背景装饰：漂浮音符和星星 -->
-    <div class="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-      <!-- 音符 🎵 -->
-      <span class="absolute text-mangrove-300/20 text-6xl animate-float-slow select-none" style="top:8%;left:5%">🎵</span>
-      <span class="absolute text-mangrove-400/15 text-5xl animate-float-medium select-none" style="top:15%;right:8%">🎶</span>
-      <span class="absolute text-mangrove-300/15 text-7xl animate-float-fast select-none" style="top:40%;left:2%">♪</span>
-      <span class="absolute text-mangrove-200/15 text-4xl animate-float-slow select-none" style="top:55%;right:5%">♫</span>
-      <span class="absolute text-mangrove-400/10 text-6xl animate-float-medium select-none" style="top:70%;left:8%">🎼</span>
-      <!-- 星星 ✨ -->
-      <span class="absolute text-amber-400/20 text-4xl animate-twinkle select-none" style="top:10%;left:15%">✨</span>
-      <span class="absolute text-amber-300/15 text-3xl animate-twinkle-delayed select-none" style="top:25%;right:15%">⭐</span>
-      <span class="absolute text-amber-400/15 text-5xl animate-twinkle select-none" style="top:50%;right:3%">✨</span>
-      <span class="absolute text-mangrove-300/10 text-3xl animate-twinkle-delayed select-none" style="top:80%;left:12%">⭐</span>
-      <span class="absolute text-mangrove-200/15 text-4xl animate-float-fast select-none" style="top:35%;left:20%">🎵</span>
-      <span class="absolute text-amber-400/10 text-2xl animate-twinkle select-none" style="top:65%;right:10%">✨</span>
+    <!-- 飘动音符粒子层（fixed 定位，始终覆盖视口；pointer-events-none 不挡交互） -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-20" aria-hidden="true">
+      <span v-for="(p, i) in noteParticles" :key="'np-'+i"
+        class="note-particle select-none"
+        :style="{
+          left: p.left + '%',
+          fontSize: p.size + 'px',
+          color: p.color,
+          '--drift': p.drift + 'px',
+          '--rotate': p.rotate + 'deg',
+          '--op': p.op,
+          animationDuration: p.duration + 's',
+          animationDelay: p.delay + 's',
+        }">{{ p.glyph }}</span>
     </div>
 
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[10px] pb-16 relative z-10">
-    <!-- 公告栏 -->
-    <div v-if="showNotice && notices.length > 0" class="mb-8 backdrop-blur-md bg-black/50 border border-white/10 rounded-2xl px-5 py-3 flex items-center gap-3">
-      <span class="text-lg shrink-0">📢</span>
+    <!-- 公告栏：毛玻璃 + 音符装饰 + 绿色微光 -->
+    <div v-if="showNotice && notices.length > 0" class="mb-8 notice-glass-bar px-5 py-3 flex items-center gap-3">
+      <span class="notice-note-icon shrink-0" aria-hidden="true">♪</span>
       <div class="flex-1 min-w-0 overflow-hidden">
-        <p class="text-sm text-white/80 truncate">
-          <span class="text-amber-400 font-medium">公告：</span>{{ notices[currentNotice] }}
+        <p class="text-sm text-white/90 truncate">
+          <span class="text-amber-300 font-medium tracking-wide">公告：</span>{{ notices[currentNotice] }}
         </p>
       </div>
       <div class="flex items-center gap-2 shrink-0">
-        <button @click="manualPrev" class="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300 transition-colors">
+        <button @click="manualPrev" class="p-1 rounded-full hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors">
           <ChevronLeft :size="14" />
         </button>
-        <button @click="manualNext" class="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300 transition-colors">
+        <button @click="manualNext" class="p-1 rounded-full hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors">
           <ChevronRight :size="14" />
         </button>
-        <button @click="showNotice = false" class="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300 transition-colors ml-1">
+        <button @click="showNotice = false" class="p-1 rounded-full hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors ml-1">
           <X :size="14" />
         </button>
       </div>
@@ -49,9 +48,10 @@
     <!-- 三个视频播放窗口 -->
     <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
       <div v-for="(v, i) in videoCards" :key="i"
-        class="overflow-hidden bg-gray-900 aspect-video relative">
+        class="overflow-hidden bg-gray-900 aspect-video relative video-glow-card"
+        :style="{ '--card-glow': v.glow }">
         <!-- Video cover poster -->
-        <div v-if="!v.url || videoCoverShowing[i]" class="absolute inset-0 z-10 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-300"
+        <div v-if="!v.url || videoCoverShowing[i]" class="absolute inset-0 z-10 flex flex-col items-center justify-center cursor-pointer transition-all duration-300"
           :style="{ background: v.background }"
           @click.stop="playCardVideo(i)">
           <component :is="v.icon" :size="32" class="text-white/50 mb-1" />
@@ -91,25 +91,25 @@
 
     <!-- Feature cards -->
     <div class="mt-12 grid grid-cols-2 md:grid-cols-4 gap-6">
-      <router-link to="/artists" class="backdrop-blur-sm bg-white/80 dark:bg-gray-900/80 border border-gray-200/50 rounded-2xl p-6 text-center block transition-shadow hover:shadow-lg hover:shadow-mangrove-500/10">
-        <Users class="w-10 h-10 text-mangrove-600 mx-auto mb-4" />
-        <h3 class="font-semibold text-pink-300">艺人档案</h3>
-        <p class="text-sm text-gray-500 mt-2">追踪你喜爱的艺人，了解他们的每一刻</p>
+      <router-link to="/artists" class="feature-glow-card backdrop-blur-sm bg-white/10 dark:bg-gray-900/80 border border-white/10 rounded-2xl p-6 text-center block">
+        <Users class="w-10 h-10 text-mangrove-400 mx-auto mb-4" />
+        <h3 class="font-semibold text-mangrove-300">艺人档案</h3>
+        <p class="text-sm text-white/50 mt-2">追踪你喜爱的艺人，了解他们的每一刻</p>
       </router-link>
-      <router-link to="/works" class="backdrop-blur-sm bg-white/80 dark:bg-gray-900/80 border border-gray-200/50 rounded-2xl p-6 text-center block transition-shadow hover:shadow-lg hover:shadow-mangrove-500/10">
-        <PenTool class="w-10 h-10 text-mangrove-600 mx-auto mb-4" />
-        <h3 class="font-semibold text-pink-300">创作者殿堂</h3>
-        <p class="text-sm text-gray-500 mt-2">路透、修图、剪辑 — 展现你的创作才华</p>
+      <router-link to="/works" class="feature-glow-card backdrop-blur-sm bg-white/10 dark:bg-gray-900/80 border border-white/10 rounded-2xl p-6 text-center block">
+        <PenTool class="w-10 h-10 text-mangrove-400 mx-auto mb-4" />
+        <h3 class="font-semibold text-mangrove-300">创作者殿堂</h3>
+        <p class="text-sm text-white/50 mt-2">路透、修图、剪辑 — 展现你的创作才华</p>
       </router-link>
-      <router-link to="/tree" class="backdrop-blur-sm bg-white/80 dark:bg-gray-900/80 border border-gray-200/50 rounded-2xl p-6 text-center block transition-shadow hover:shadow-lg hover:shadow-mangrove-500/10">
-        <TreePine class="w-10 h-10 text-mangrove-600 mx-auto mb-4" />
-        <h3 class="font-semibold text-pink-300">芒果树养成</h3>
-        <p class="text-sm text-gray-500 mt-2">每日签到，培育专属芒果树</p>
+      <router-link to="/tree" class="feature-glow-card backdrop-blur-sm bg-white/10 dark:bg-gray-900/80 border border-white/10 rounded-2xl p-6 text-center block">
+        <TreePine class="w-10 h-10 text-mangrove-400 mx-auto mb-4" />
+        <h3 class="font-semibold text-mangrove-300">芒果树养成</h3>
+        <p class="text-sm text-white/50 mt-2">每日签到，培育专属芒果树</p>
       </router-link>
-      <router-link to="/community" class="backdrop-blur-sm bg-white/80 dark:bg-gray-900/80 border border-gray-200/50 rounded-2xl p-6 text-center block transition-shadow hover:shadow-lg hover:shadow-mangrove-500/10">
-        <Mail class="w-10 h-10 text-mangrove-600 mx-auto mb-4" />
-        <h3 class="font-semibold text-pink-300">信箱</h3>
-        <p class="text-sm text-gray-500 mt-2">给艺人写一封信，留下你的心声</p>
+      <router-link to="/community" class="feature-glow-card backdrop-blur-sm bg-white/10 dark:bg-gray-900/80 border border-white/10 rounded-2xl p-6 text-center block">
+        <Mail class="w-10 h-10 text-mangrove-400 mx-auto mb-4" />
+        <h3 class="font-semibold text-mangrove-300">信箱</h3>
+        <p class="text-sm text-white/50 mt-2">给艺人写一封信，留下你的心声</p>
       </router-link>
     </div>
 
@@ -158,6 +158,24 @@ import CalendarBar from '@/components/home/CalendarBar.vue'
 import MusicPlayer from '@/components/home/MusicPlayer.vue'
 
 const router = useRouter()
+
+// 飘动音符粒子（CSS animation 驱动，半透明绿/金色，从底部向上飘）
+const noteGlyphs = ['♪', '♫', '♬', '♩', '✦']
+const noteColors = ['#2E8B57', '#3CB371', '#4caf7c', '#f59e0b', '#f59e0b']
+const noteParticles = Array.from({ length: 20 }, () => {
+  const dur = 14 + Math.random() * 16
+  return {
+    glyph: noteGlyphs[Math.floor(Math.random() * noteGlyphs.length)],
+    left: Math.random() * 100,
+    size: 18 + Math.random() * 28,
+    color: noteColors[Math.floor(Math.random() * noteColors.length)],
+    duration: dur,
+    delay: -Math.random() * dur, // 负延迟：初始即分布在各高度
+    drift: (Math.random() - 0.5) * 120,
+    rotate: (Math.random() - 0.5) * 360,
+    op: 0.4 + Math.random() * 0.25,
+  }
+})
 
 // ── 可拖动按钮逻辑 ──
 const dragState = ref({ active: false, which: '', startX: 0, startY: 0, initX: 0, initY: 0, moved: false })
@@ -387,4 +405,105 @@ onBeforeUnmount(stopNoticeRotation)
 .animate-float-fast { animation: float-fast 4s ease-in-out infinite; }
 .animate-twinkle { animation: twinkle 3s ease-in-out infinite; }
 .animate-twinkle-delayed { animation: twinkle 4s ease-in-out 1.5s infinite; }
+
+/* ===== 1. 公告栏毛玻璃 + 音符装饰 ===== */
+.notice-glass-bar {
+  background: rgba(10, 10, 12, 0.4);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(46, 139, 87, 0.2);
+  border-radius: 9999px;
+  box-shadow:
+    0 0 10px rgba(46, 139, 87, 0.15),
+    0 0 25px rgba(46, 139, 87, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.notice-note-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(46, 139, 87, 0.6) 0%, rgba(34, 112, 74, 0.4) 100%);
+  color: #fff;
+  font-size: 14px;
+  box-shadow: 0 0 8px rgba(46, 139, 87, 0.35);
+  animation: note-pulse 2.5s ease-in-out infinite;
+}
+@keyframes note-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(46, 139, 87, 0.35); }
+  50% { box-shadow: 0 0 14px rgba(46, 139, 87, 0.5); }
+}
+
+/* ===== 2. 视频卡片微光边框 + hover浮起 ===== */
+.video-glow-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow:
+    0 0 6px var(--card-glow, rgba(138, 255, 164, 0.15)),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.video-glow-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 0 14px var(--card-glow, rgba(138, 255, 164, 0.3)),
+    0 0 30px var(--card-glow, rgba(138, 255, 164, 0.12)),
+    0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* ===== 3. Feature 功能卡片 hover浮起 + 绿色光晕 ===== */
+.feature-glow-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 0 6px rgba(46, 139, 87, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.feature-glow-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(46, 139, 87, 0.3);
+  box-shadow:
+    0 0 14px rgba(46, 139, 87, 0.3),
+    0 0 35px rgba(46, 139, 87, 0.12),
+    0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* 飘动音符粒子 */
+.note-particle {
+  position: absolute;
+  bottom: -40px;
+  opacity: 0;
+  line-height: 1;
+  animation-name: note-drift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+  text-shadow: 0 0 6px currentColor, 0 0 2px rgba(255,255,255,0.55);
+}
+@keyframes note-drift {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(0.7);
+    opacity: 0;
+  }
+  10% { opacity: var(--op, 0.4); }
+  25% {
+    transform: translate(calc(var(--drift) * 0.6), -26vh)
+      rotate(calc(var(--rotate) * 0.25)) scale(1);
+  }
+  50% {
+    transform: translate(calc(var(--drift) * -0.4), -52vh)
+      rotate(calc(var(--rotate) * 0.5)) scale(1);
+  }
+  75% {
+    transform: translate(calc(var(--drift) * 0.5), -78vh)
+      rotate(calc(var(--rotate) * 0.75)) scale(0.95);
+  }
+  90% { opacity: var(--op, 0.4); }
+  100% {
+    transform: translate(0, -108vh) rotate(var(--rotate)) scale(0.8);
+    opacity: 0;
+  }
+}
 </style>

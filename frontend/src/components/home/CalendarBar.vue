@@ -89,7 +89,7 @@ const CountdownRow = {
 
     return () => {
       const boxes = units.map(u =>
-        h('div', { class: 'w-20 h-24 sm:w-28 sm:h-24 flex flex-col items-center justify-center rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm' }, [
+        h('div', { class: 'countdown-box w-20 h-24 sm:w-28 sm:h-24 flex flex-col items-center justify-center rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm' }, [
           h('span', { class: 'text-4xl sm:text-5xl font-serif text-white font-bold leading-none tabular-nums' },
             String(u.val()).padStart(2, '0')),
           h('span', { class: 'text-[11px] sm:text-xs text-white/50 mt-2 tracking-wider' }, u.label)
@@ -204,3 +204,21 @@ onMounted(async () => {
 
 onBeforeUnmount(() => { if (timer) clearInterval(timer) })
 </script>
+
+<style scoped>
+/* 倒计时数字卡片：淡淡琴键纹理 */
+:deep(.countdown-box) {
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 7px,
+      rgba(15, 51, 32, 0.22) 7px 11px,
+      transparent 11px 21px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.06) 0 19px,
+      rgba(255, 255, 255, 0.12) 19px 21px
+    );
+}
+</style>

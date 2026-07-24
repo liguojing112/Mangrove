@@ -47,8 +47,8 @@
               <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">英文名：</span><span class="text-gray-800">candice</span></div>
               <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">罗马音：</span><span class="text-gray-800">QUCHANG</span></div>
               <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">性别：</span><span class="text-gray-800">女</span></div>
-              <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">年龄：</span><span class="text-gray-800">18岁</span></div>
-              <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">生日：</span><span class="text-gray-800">07.28</span></div>
+              <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">年龄：</span><span class="text-gray-800">{{ calcAge(artist.birthDate) }}</span></div>
+              <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">生日：</span><span class="text-gray-800">{{ formatBirthday(artist.birthDate) }}</span></div>
               <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">身高：</span><span class="text-gray-800">178.1cm</span></div>
               <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">星座：</span><span class="text-gray-800">狮子座 ♌</span></div>
               <div class="flex items-start border-b border-gray-100 pb-2"><span class="text-mangrove-600 w-24 shrink-0">国籍：</span><span class="text-gray-800">CN 中国</span></div>
@@ -121,6 +121,21 @@ const avatarPhotos = computed(() => {
 
 const route = useRoute()
 const artist = ref({ stageName: '' })
+
+function calcAge(birthDate) {
+  if (!birthDate) return '-'
+  const birth = new Date(birthDate)
+  const today = new Date()
+  let age = today.getFullYear() - birth.getFullYear()
+  if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--
+  return age + '岁'
+}
+
+function formatBirthday(birthDate) {
+  if (!birthDate) return '-'
+  const d = new Date(birthDate)
+  return String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0')
+}
 const bioSections = ref([])
 const loading = ref(true)
 const showAskModal = ref(false)

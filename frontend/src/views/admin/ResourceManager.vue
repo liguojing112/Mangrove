@@ -124,8 +124,7 @@
           </template>
           <template v-else-if="isVideo(file)">
             <div class="w-full h-full bg-gray-900 flex items-center justify-center relative">
-              <img v-if="file.thumbnailUrl" :src="file.thumbnailUrl" class="w-full h-full object-cover opacity-60" alt="" />
-              <Video v-else class="w-12 h-12 text-gray-600" />
+              <video :src="file.url || file.fileUrl" class="w-full h-full object-cover opacity-40" muted preload="metadata" @loadeddata="$event.target.currentTime=0.5" />
               <div class="absolute inset-0 flex items-center justify-center">
                 <div class="w-12 h-12 rounded-full bg-white/30 flex items-center justify-center">
                   <Play class="w-5 h-5 text-white ml-0.5" />

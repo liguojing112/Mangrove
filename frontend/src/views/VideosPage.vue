@@ -28,7 +28,7 @@
           <Shuffle class="w-4 h-4" /> 随机播放
         </button>
         <div v-else class="relative mx-auto rounded-2xl overflow-hidden bg-black shadow-2xl">
-          <video :src="randomVideo.videoUrl" :poster="randomVideo.thumbnailUrl || undefined" controls autoplay playsinline webkit-playsinline class="block max-h-[80vh] max-w-full bg-black" />
+          <video :src="randomVideo.thumbnailUrl" controls autoplay class="block max-h-[80vh] max-w-full bg-black" />
           <div class="absolute top-3 right-3 flex gap-2 z-20">
             <button type="button" class="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-white transition-colors" @click.stop="playRandom">
               <Shuffle class="w-3 h-3" /> 换一个
@@ -49,12 +49,7 @@
       <!-- 保留原有两列瀑布流布局 -->
       <section v-else class="columns-2 gap-3" aria-label="短视频列表">
         <button v-for="v in displayedVideos" :key="v.id" type="button" class="group relative mb-3 block w-full break-inside-avoid overflow-hidden rounded-lg bg-black text-left shadow-sm transition-shadow hover:shadow-xl" @click="openVideo(v)">
-          <img v-if="v.thumbnailUrl && !v.thumbnailFailed" :src="v.thumbnailUrl" :alt="v.title || '短视频封面'"
-            class="max-h-[400px] min-h-40 w-full bg-gray-900 object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-            loading="lazy" @error="v.thumbnailFailed = true" />
-          <span v-else class="flex h-56 w-full items-center justify-center bg-gradient-to-br from-gray-800 to-gray-950 text-gray-500">
-            <Video class="h-12 w-12" />
-          </span>
+          <video :src="v.thumbnailUrl" muted class="max-h-[400px] w-full bg-black object-cover transition-transform duration-300 group-hover:scale-[1.02]" preload="metadata" @loadeddata="$event.target.currentTime=0.5" />
           <span class="absolute inset-0 bg-black/5 transition-colors group-hover:bg-black/20"></span>
           <span class="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-gray-900 shadow-lg transition-transform group-hover:scale-105">
             <Play class="h-4 w-4 fill-current" />
@@ -70,7 +65,7 @@
 
     <div v-if="playingVideo" class="fixed inset-0 z-[120] flex items-center justify-center bg-black/95 p-4" @click.self="playingVideo=null">
       <button type="button" class="absolute right-4 top-4 p-2 text-white/80 hover:text-white" aria-label="关闭视频" @click="playingVideo=null"><X class="h-6 w-6" /></button>
-      <video :src="playingVideo.videoUrl" :poster="playingVideo.thumbnailUrl || undefined" controls autoplay playsinline webkit-playsinline class="max-h-[90vh] max-w-[96vw]" />
+      <video :src="playingVideo" controls autoplay class="max-h-[90vh] max-w-[96vw]" />
     </div>
   </main>
 </template>
@@ -97,7 +92,7 @@ function playRandom() {
 }
 
 function openVideo(v) {
-  playingVideo.value = v
+  playingVideo.value = v.thumbnailUrl || v.url || v.fileUrl
 }
 
 const displayCategories = computed(() => {
@@ -125,29 +120,13 @@ function catClass(c) {
 async function loadData() {
   loading.value = true
   try {
-    const [metaRes, fileRes] = await Promise.all([
-      fetch('/api/files/meta?status=1').catch(() => null),
-      fetch('/api/files/list').catch(() => null)
-    ])
-    if (metaRes?.ok && fileRes?.ok) {
-      const [metaJson, fileJson] = await Promise.all([metaRes.json(), fileRes.json()])
-      if (metaJson.code === 200 && fileJson.code === 200) {
-        const existingFilenames = new Set((fileJson.data || []).map(file => file.filename))
-        videos.value = (metaJson.data || [])
-          .filter(m => existingFilenames.has(m.filename) && /\.(mp4|webm|mov|avi)$/i.test(m.filename || ''))
-          .map((m, i) => {
-          return {
-            id: 'v' + i,
-            title: m.displayName || (m.filename || '').replace(/\.[^.]+$/, ''),
-            videoUrl: m.url,
-            // 封面文件名由视频 URL 固定派生，兼容尚未返回 thumbnailUrl 的旧版接口。
-            thumbnailUrl: m.thumbnailUrl || (m.url ? `${m.url}.poster.jpg` : ''),
-            thumbnailFailed: false,
-            categoryLabel: m.category || '',
-            date: m.photoDate || '',
-            duration: ''
-          }
-          })
+    const metaRes = await fetch('/api/files/meta?status=1').catch(() => null)
+    if (metaRes && metaRes.ok) {
+      const j = await metaRes.json()
+      if (j.code === 200 && j.data) {
+        videos.value = j.data.filter(m => /\.(mp4|webm|mov|avi)$/i.test(m.filename||'')).map((m,i) => {
+          return { id: 'v'+i, title: m.displayName || (m.filename||'').replace(/\.[^.]+$/,''), thumbnailUrl: m.url, categoryLabel: m.category||'', date: m.photoDate || '', duration: '' }
+        })
       }
     }
     const catRes = await fetch('/api/files/categories').catch(() => null)

@@ -61,13 +61,29 @@
     </div>
 
     <!-- Logged In: Full-screen Big Tree -->
-    <div v-else class="relative w-full full-vh flex items-end justify-center overflow-hidden">
+    <div v-else class="relative w-full full-vh flex items-center justify-center overflow-hidden">
       <img v-if="treeBgUrl" :src="treeBgUrl" alt="" class="absolute inset-0 w-full h-full object-cover z-0" />
       <div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white/60 to-transparent z-10" />
 
-      <div class="relative z-20 w-full h-full flex items-end justify-center overflow-hidden">
+      <!-- 飘落音符粒子层 -->
+      <div class="absolute inset-0 pointer-events-none overflow-hidden z-25" aria-hidden="true">
+        <span v-for="(p, i) in fallingNotes" :key="'fn-'+i"
+          class="falling-note select-none"
+          :style="{
+            left: p.left + '%',
+            fontSize: p.size + 'px',
+            color: p.color,
+            '--fall-drift': p.drift + 'px',
+            '--fall-rotate': p.rotate + 'deg',
+            '--fall-op': p.op,
+            animationDuration: p.duration + 's',
+            animationDelay: p.delay + 's',
+          }">{{ p.glyph }}</span>
+      </div>
+
+      <div class="relative z-20 w-full h-full flex items-center justify-center overflow-hidden px-2">
         <img src="/assets/tree/golden-tree.png?v=2" alt="芒果树"
-          class="max-w-full max-h-full object-contain sm:w-auto sm:h-full sm:max-w-none mb-0 translate-y-[-220px]" />
+          class="max-w-full max-h-full object-contain tree-sway" />
 
         <Sparkles class="sparkle s1 w-5 h-5 text-mangrove-400/60" />
         <Star class="sparkle s2 w-4 h-4 text-yellow-400/50" />
@@ -97,6 +113,24 @@ const barrageInput = ref('')
 const barrageSending = ref(false)
 const pausedId = ref(null)
 const currentUserId = computed(() => currentUser.value?.id || null)
+
+// 飘落音符粒子（从树冠向下飘落，金/绿色调）
+const noteGlyphs = ['♪', '♫', '♬', '♩', '✦']
+const noteColors = ['#d4a017', '#e6b822', '#2E8B57', '#3CB371', '#c49b2c']
+const fallingNotes = Array.from({ length: 16 }, () => {
+  const dur = 8 + Math.random() * 10
+  return {
+    glyph: noteGlyphs[Math.floor(Math.random() * noteGlyphs.length)],
+    left: Math.random() * 100,
+    size: 14 + Math.random() * 20,
+    color: noteColors[Math.floor(Math.random() * noteColors.length)],
+    duration: dur,
+    delay: -Math.random() * dur,
+    drift: (Math.random() - 0.5) * 80,
+    rotate: (Math.random() - 0.5) * 360,
+    op: 0.5 + Math.random() * 0.3,
+  }
+})
 
 let pauseTimer = null
 
@@ -195,6 +229,53 @@ onBeforeUnmount(() => {
 .full-vh {
   height: 100vh;
   height: 100dvh;
+}
+
+/* ===== 树叶微微摇晃 ===== */
+.tree-sway {
+  transform-origin: bottom center;
+  animation: tree-sway 5s ease-in-out infinite;
+}
+@keyframes tree-sway {
+  0%, 100% { transform: rotate(-0.8deg); }
+  50% { transform: rotate(0.8deg); }
+}
+
+/* ===== 音符飘落 ===== */
+.falling-note {
+  position: absolute;
+  top: -30px;
+  opacity: 0;
+  line-height: 1;
+  animation-name: note-fall;
+  animation-timing-function: ease-in;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+  text-shadow: 0 0 5px currentColor, 0 0 2px rgba(255, 255, 255, 0.5);
+}
+@keyframes note-fall {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(0.6);
+    opacity: 0;
+  }
+  8% { opacity: var(--fall-op, 0.6); }
+  30% {
+    transform: translate(calc(var(--fall-drift) * 0.5), 30vh)
+      rotate(calc(var(--fall-rotate) * 0.3)) scale(1);
+  }
+  60% {
+    transform: translate(calc(var(--fall-drift) * -0.3), 60vh)
+      rotate(calc(var(--fall-rotate) * 0.6)) scale(0.95);
+  }
+  85% {
+    transform: translate(calc(var(--fall-drift) * 0.4), 85vh)
+      rotate(calc(var(--fall-rotate) * 0.85)) scale(0.85);
+    opacity: var(--fall-op, 0.6);
+  }
+  100% {
+    transform: translate(0, 105vh) rotate(var(--fall-rotate)) scale(0.7);
+    opacity: 0;
+  }
 }
 
 .sparkle {

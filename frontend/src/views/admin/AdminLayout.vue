@@ -107,7 +107,7 @@ const navItems = [
   { to: '/admin/merchandise', label: '周边管理', icon: Gift },
   { to: '/admin/works', label: '创作管理', icon: PenTool },
   { to: '/admin/schedules', label: '行程管理', icon: CalendarDays },
-  { to: '/admin/comments', label: '评论管理', icon: MessageSquare },
+  { to: '/admin/comments', label: '社区管理', icon: MessageSquare },
   { to: '/admin/users', label: '用户管理', icon: Users },
   { to: '/admin/game', label: '游戏管理', icon: Gamepad2 },
   { to: '/admin/letters', label: '来信管理', icon: MessageSquare },
