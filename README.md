@@ -204,7 +204,6 @@ Mangrove/
 │   └── *.sql                          # 模块迁移脚本
 │
 ├── pom.xml                            # Maven 配置
-├── LICENSE                            # MIT 许可证
 └── README.md                          # 本文档
 ```
 
@@ -285,7 +284,7 @@ npm run dev
 
 ## 📄 许可证
 
-本项目基于 **MIT License** 开源 —— 详见 [LICENSE](./LICENSE) 文件。
+本项目为非公开的私有项目，仅供学习和内部使用。未经授权，禁止复制、分发或用于商业用途。
 
 版权所有 © 2026 [liguojing112](https://github.com/liguojing112)
 
