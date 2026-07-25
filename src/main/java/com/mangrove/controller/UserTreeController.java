@@ -73,6 +73,39 @@ public class UserTreeController {
         return Result.success("成功帮 " + target.getNickname() + " 签到！");
     }
 
+    @PostMapping("/admin/add-points")
+    @Transactional
+    public Result<String> addPoints(@RequestBody java.util.Map<String, Object> body, Authentication authentication) {
+        // 超级管理员给用户自定义加/减积分
+        SysUser admin = getCurrentUser(authentication);
+        if (admin.getRole() != SysUser.Role.SUPER_ADMIN) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "仅超级管理员可操作");
+        }
+
+        String username = (String) body.get("username");
+        Integer points = (Integer) body.get("points");
+        String reason = (String) body.getOrDefault("reason", "管理员调整");
+
+        if (username == null || username.isBlank()) throw new BusinessException("用户名不能为空");
+        if (points == null || points == 0) throw new BusinessException("积分不能为0");
+
+        SysUser target = sysUserRepository.findByUsername(username)
+                .orElseGet(() -> sysUserRepository.findByNickname(username)
+                        .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND, "用户不存在")));
+
+        UserTree tree = userTreeRepository.findByUserId(target.getId())
+                .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND, "该用户芒果树不存在"));
+
+        int prevPoints = tree.getPoints() != null ? tree.getPoints() : 0;
+        int prevTotalPoints = tree.getTotalPoints() != null ? tree.getTotalPoints() : 0;
+        tree.setPoints(Math.max(0, prevPoints + points));
+        if (points > 0) tree.setTotalPoints(prevTotalPoints + points);
+        userTreeRepository.save(tree);
+
+        String action = points > 0 ? "增加" : "扣除";
+        return Result.success("成功为 " + target.getNickname() + action + Math.abs(points) + " 积分（" + reason + "）");
+    }
+
     private Result<UserTree> doCheckin(SysUser user) {
         LocalDate today = LocalDate.now();
 

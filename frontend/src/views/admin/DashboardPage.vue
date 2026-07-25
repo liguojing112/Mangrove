@@ -35,6 +35,34 @@
       </router-link>
     </div>
 
+    <!-- 自定义积分 -->
+    <div class="card p-5 mb-8">
+      <h2 class="text-sm font-semibold text-gray-800 mb-1">🎁 自定义积分</h2>
+      <p class="text-xs text-gray-400 mb-4">给指定用户增加或扣除积分</p>
+      <div class="flex flex-wrap items-end gap-3">
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-gray-500">用户名/昵称</label>
+          <input v-model="pointsForm.username" placeholder="输入用户名或昵称"
+            class="border border-gray-200 rounded-lg px-3 py-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-mangrove-400" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-gray-500">积分数（正数加，负数减）</label>
+          <input v-model.number="pointsForm.points" type="number" placeholder="如 100 或 -50"
+            class="border border-gray-200 rounded-lg px-3 py-2 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-mangrove-400" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-gray-500">原因（选填）</label>
+          <input v-model="pointsForm.reason" placeholder="如：活动奖励"
+            class="border border-gray-200 rounded-lg px-3 py-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-mangrove-400" />
+        </div>
+        <button @click="addPoints" :disabled="pointsSending"
+          class="btn-primary text-sm px-5 py-2 disabled:opacity-40">
+          {{ pointsSending ? '处理中...' : '确认' }}
+        </button>
+      </div>
+      <p v-if="pointsMsg" class="text-sm mt-2" :class="pointsMsg.includes('成功') ? 'text-emerald-600' : 'text-red-500'">{{ pointsMsg }}</p>
+    </div>
+
     <!-- 照片馆藏 Hero 封面设置（5 张独立卡片） -->
     <div class="card p-5 mb-8">
       <h2 class="text-sm font-semibold text-gray-800 mb-1">🖼️ 照片馆藏 - Hero 卡片设置</h2>
@@ -200,6 +228,36 @@ const heroCards = reactive(HERO_CARD_DEFS.map(def => ({
   uploading: false,
 })))
 const heroCardsMsg = ref('')
+
+// 自定义积分
+const pointsForm = ref({ username: '', points: null, reason: '' })
+const pointsSending = ref(false)
+const pointsMsg = ref('')
+
+async function addPoints() {
+  if (!pointsForm.value.username.trim()) { pointsMsg.value = '请输入用户名'; return }
+  if (!pointsForm.value.points || pointsForm.value.points === 0) { pointsMsg.value = '请输入积分数量'; return }
+  pointsSending.value = true
+  pointsMsg.value = ''
+  try {
+    const res = await fetch('/api/tree/admin/add-points', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify(pointsForm.value)
+    })
+    const json = await res.json()
+    if (json.code === 200) {
+      pointsMsg.value = json.data
+      pointsForm.value = { username: '', points: null, reason: '' }
+    } else {
+      pointsMsg.value = json.msg || '操作失败'
+    }
+  } catch (e) {
+    pointsMsg.value = '网络错误'
+  } finally {
+    pointsSending.value = false
+  }
+}
 
 async function fetchHeroCards() {
   try {

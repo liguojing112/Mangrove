@@ -35,7 +35,7 @@
 
     <!-- Hero 横幅 -->
     <div class="relative pt-16 pb-2">
-      <div class="relative bg-gradient-to-br from-mangrove-700 via-mangrove-600 to-mangrove-500 mx-4 sm:mx-6 lg:mx-auto lg:max-w-7xl rounded-3xl overflow-hidden shadow-xl">
+      <div class="relative bg-gradient-to-br from-mangrove-700 via-mangrove-600 to-mangrove-500 mx-4 sm:mx-6 lg:mx-auto lg:max-w-7xl rounded-none overflow-hidden shadow-xl">
         <!-- 钢琴键装饰底纹 -->
         <div class="absolute inset-0 opacity-[0.06]" aria-hidden="true">
           <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
@@ -82,7 +82,7 @@
 
       <!-- Loading -->
       <div v-if="loading" class="text-center py-20">
-        <div class="inline-flex items-center gap-3 bg-white rounded-2xl px-8 py-6 shadow-card">
+        <div class="inline-flex items-center gap-3 bg-white rounded-none px-8 py-6 shadow-card">
           <div class="w-8 h-8 border-3 border-mangrove-200 border-t-mangrove-600 rounded-full animate-spin"></div>
           <span class="text-mangrove-600 text-sm font-medium">加载中...</span>
         </div>
@@ -94,7 +94,7 @@
           v-for="(artist, index) in filteredArtists"
           :key="artist.id"
           :to="'/artists/' + artist.id"
-          class="artist-card group block overflow-hidden rounded-2xl bg-white shadow-card border border-transparent hover:border-mangrove-300/80"
+          class="artist-card group block overflow-hidden rounded-none bg-white shadow-card border border-transparent hover:border-mangrove-300/80"
           :style="{ animationDelay: index * 80 + 'ms' }"
         >
           <!-- 头像区域 -->
@@ -136,7 +136,7 @@
       <div v-else class="text-center py-20">
         <div class="inline-block relative">
           <!-- 钢琴造型空状态 -->
-          <div class="bg-white rounded-3xl p-8 shadow-card">
+          <div class="bg-white rounded-none p-8 shadow-card">
             <div class="w-20 h-20 mx-auto mb-4 relative">
               <!-- 五线谱圆圈 -->
               <div class="w-20 h-20 rounded-full bg-mangrove-50 flex items-center justify-center">

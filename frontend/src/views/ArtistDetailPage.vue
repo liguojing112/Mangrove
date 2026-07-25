@@ -43,9 +43,9 @@
         <!-- 左侧：头像 + 签名 + 品牌 -->
         <div class="md:w-72 shrink-0 space-y-0">
           <!-- 头像区域 -->
-          <div class="relative aspect-square rounded-tl-2xl bg-gradient-to-br from-mangrove-50 to-mangrove-100 border border-mangrove-200 overflow-hidden shadow-card">
+          <div class="relative aspect-square rounded-none bg-gradient-to-br from-mangrove-50 to-mangrove-100 border border-mangrove-200 overflow-hidden shadow-card">
             <!-- 绿色光晕 -->
-            <div class="absolute -inset-2 bg-mangrove-300/20 rounded-tl-2xl blur-xl -z-10"></div>
+            <div class="absolute -inset-2 bg-mangrove-300/20 rounded-none blur-xl -z-10"></div>
             <div v-if="avatarPhotos.length > 0" class="w-full h-full relative">
               <Swiper :modules="swiperModules" :slides-per-view="1" :loop="avatarPhotos.length > 1"
                 :autoplay="avatarPhotos.length > 1 ? { delay: 3000, disableOnInteraction: false } : false"
@@ -65,32 +65,32 @@
             </div>
           </div>
           <!-- 签名区 -->
-          <div class="rounded-bl-2xl border border-mangrove-200 bg-white border-t-0 p-4 text-center overflow-hidden">
+          <div class="rounded-none border border-mangrove-200 bg-white border-t-0 p-4 text-center overflow-hidden">
             <span class="inline-flex items-center gap-1 text-xs text-mangrove-500 font-medium mb-2">
               <PenLine class="w-3 h-3"/>
               签名
             </span>
-            <img v-if="artist.signatureImageUrl" :src="artist.signatureImageUrl" class="w-full h-24 object-cover rounded-xl" />
-            <div v-else class="h-24 bg-mangrove-50/50 rounded-xl flex items-center justify-center">
+            <img v-if="artist.signatureImageUrl" :src="artist.signatureImageUrl" class="w-full h-24 object-cover rounded-none" />
+            <div v-else class="h-24 bg-mangrove-50/50 rounded-none flex items-center justify-center">
               <span class="text-gray-400 text-xs">点击上传签名图</span>
             </div>
           </div>
           <!-- 品牌区 -->
-          <div class="rounded-b-2xl border border-mangrove-200 bg-white border-t-0 p-4 text-center overflow-hidden">
+          <div class="rounded-none border border-mangrove-200 bg-white border-t-0 p-4 text-center overflow-hidden">
             <span class="inline-flex items-center gap-1 text-xs text-mangrove-500 font-medium mb-2">
               <Award class="w-3 h-3"/>
               品牌
             </span>
-            <img v-if="artist.brandImageUrl" :src="artist.brandImageUrl" class="w-full h-24 object-cover rounded-xl" />
-            <div v-else class="h-24 bg-mangrove-50/50 rounded-xl flex items-center justify-center">
+            <img v-if="artist.brandImageUrl" :src="artist.brandImageUrl" class="w-full h-24 object-cover rounded-none" />
+            <div v-else class="h-24 bg-mangrove-50/50 rounded-none flex items-center justify-center">
               <span class="text-gray-400 text-xs">点击上传品牌标识</span>
             </div>
           </div>
         </div>
 
         <!-- 右侧：基础信息 -->
-        <div class="flex-1 border border-mangrove-200 rounded-r-2xl bg-white shadow-card overflow-hidden">
-          <div class="bg-gradient-to-r from-mangrove-50 via-mangrove-50/80 to-transparent rounded-tr-2xl px-5 py-5 border-b border-mangrove-100">
+        <div class="flex-1 border border-mangrove-200 rounded-none bg-white shadow-card overflow-hidden">
+          <div class="bg-gradient-to-r from-mangrove-50 via-mangrove-50/80 to-transparent rounded-none px-5 py-5 border-b border-mangrove-100">
             <div class="flex items-center justify-center gap-2">
               <span class="text-mangrove-400 text-lg">𝄞</span>
               <h2 class="text-mangrove-700 font-bold text-xl">基础信息</h2>
@@ -112,7 +112,7 @@
       </div>
 
       <!-- 详细介绍 -->
-      <div class="bg-gradient-to-r from-mangrove-50 to-mangrove-50/60 rounded-2xl px-5 py-4 mb-5 flex items-center justify-between border border-mangrove-100 detail-fade-in" style="animation-delay: 150ms">
+      <div class="bg-gradient-to-r from-mangrove-50 to-mangrove-50/60 rounded-none px-5 py-4 mb-5 flex items-center justify-between border border-mangrove-100 detail-fade-in" style="animation-delay: 150ms">
         <div class="flex items-center gap-2">
           <span class="text-mangrove-500">📝</span>
           <h2 class="text-mangrove-700 font-bold">详细介绍</h2>
@@ -127,17 +127,17 @@
       <Teleport to="body">
         <Transition name="modal">
           <div v-if="showAskModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50" @click.self="showAskModal = false">
-            <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl detail-modal-enter">
+            <div class="bg-white rounded-none p-6 w-full max-w-md mx-4 shadow-xl detail-modal-enter">
               <div class="flex items-center gap-2 mb-4">
                 <div class="w-8 h-8 bg-mangrove-100 rounded-full flex items-center justify-center">
                   <MessageCircle class="w-4 h-4 text-mangrove-600"/>
                 </div>
                 <h3 class="text-lg font-bold text-gray-900">向艺人提问</h3>
               </div>
-              <textarea v-model="askText" class="w-full rounded-xl border border-mangrove-200 px-4 py-3 text-sm resize-none h-32 focus:outline-none focus:ring-2 focus:ring-mangrove-300 focus:border-mangrove-400 transition-all placeholder-gray-400" placeholder="请输入你的问题..."></textarea>
+              <textarea v-model="askText" class="w-full rounded-none border border-mangrove-200 px-4 py-3 text-sm resize-none h-32 focus:outline-none focus:ring-2 focus:ring-mangrove-300 focus:border-mangrove-400 transition-all placeholder-gray-400" placeholder="请输入你的问题..."></textarea>
               <div class="flex justify-end gap-3 mt-4">
-                <button @click="showAskModal = false" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">取消</button>
-                <button @click.stop="submitAsk" @touchstart.stop.prevent="submitAsk" :disabled="!askText.trim()" class="px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-mangrove-600 to-mangrove-500 rounded-lg hover:from-mangrove-700 hover:to-mangrove-600 disabled:opacity-40 transition-all shadow-sm hover:shadow">提交</button>
+                <button @click="showAskModal = false" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-none transition-colors">取消</button>
+                <button @click.stop="submitAsk" @touchstart.stop.prevent="submitAsk" :disabled="!askText.trim()" class="px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-mangrove-600 to-mangrove-500 rounded-none hover:from-mangrove-700 hover:to-mangrove-600 disabled:opacity-40 transition-all shadow-sm hover:shadow">提交</button>
               </div>
             </div>
           </div>
@@ -150,7 +150,7 @@
           <div
             v-for="(section, index) in bioSections"
             :key="section.id"
-            class="qa-card rounded-2xl border-2 border-mangrove-200/80 bg-white p-5 shadow-card transition-all duration-300 detail-fade-in hover:bg-gradient-to-r hover:from-mangrove-50/60 hover:to-white hover:border-mangrove-400/70"
+            class="qa-card rounded-none border-2 border-mangrove-200/80 bg-white p-5 shadow-card transition-all duration-300 detail-fade-in hover:bg-gradient-to-r hover:from-mangrove-50/60 hover:to-white hover:border-mangrove-400/70"
             :style="{ animationDelay: (200 + index * 60) + 'ms' }"
           >
             <div class="flex items-start gap-3">
@@ -168,7 +168,7 @@
 
       <!-- 详细介绍空状态 -->
       <div v-if="bioSections.length === 0" class="text-center py-12">
-        <div class="inline-block bg-white rounded-2xl px-8 py-6 shadow-card">
+        <div class="inline-block bg-white rounded-none px-8 py-6 shadow-card">
           <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-mangrove-50 flex items-center justify-center">
             <span class="text-2xl">🎵</span>
           </div>
