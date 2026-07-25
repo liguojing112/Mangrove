@@ -236,8 +236,8 @@ public class FileController {
     @PostMapping("/meta")
     public Result<Void> saveMeta(@RequestBody Map<String, Object> body) {
         try (java.sql.Connection conn = getDbConnection()) {
-            String sql = "INSERT INTO file_meta (filename, display_name, seq_no, category, photo_date, status) VALUES (?,?,?,?,?,?) " +
-                "ON DUPLICATE KEY UPDATE display_name=VALUES(display_name), seq_no=VALUES(seq_no), category=VALUES(category), photo_date=VALUES(photo_date), status=VALUES(status)";
+            String sql = "INSERT INTO file_meta (filename, display_name, seq_no, category, photo_date, cover_url, status) VALUES (?,?,?,?,?,?,?) " +
+                "ON DUPLICATE KEY UPDATE display_name=VALUES(display_name), seq_no=VALUES(seq_no), category=VALUES(category), photo_date=VALUES(photo_date), cover_url=VALUES(cover_url), status=VALUES(status)";
             java.sql.PreparedStatement ps = conn.prepareStatement(sql);
             ps.setString(1, (String) body.get("filename"));
             ps.setString(2, (String) body.getOrDefault("displayName", ""));
@@ -245,8 +245,10 @@ public class FileController {
             ps.setString(4, (String) body.getOrDefault("category", ""));
             String date = (String) body.get("photoDate");
             ps.setString(5, date != null && !date.isEmpty() ? date : null);
+            String coverUrl = (String) body.get("coverUrl");
+            ps.setString(6, coverUrl != null && !coverUrl.isEmpty() ? coverUrl : null);
             Object statusObj = body.get("status");
-            ps.setInt(6, statusObj != null ? ((Number) statusObj).intValue() : 1);
+            ps.setInt(7, statusObj != null ? ((Number) statusObj).intValue() : 1);
             ps.executeUpdate();
             ps.close();
             return Result.success();
@@ -287,6 +289,7 @@ public class FileController {
                 item.put("seqNo", rs.getInt("seq_no"));
                 item.put("category", rs.getString("category"));
                 item.put("photoDate", rs.getString("photo_date"));
+                item.put("coverUrl", rs.getString("cover_url"));
                 item.put("status", rs.getInt("status"));
                 item.put("url", "/uploads/" + filename);
                 String thumbnailUrl = videoThumbnailService.getThumbnailUrl(filename);

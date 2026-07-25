@@ -127,8 +127,49 @@ public class AdminUserController {
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     public Result<Void> delete(@PathVariable Long id, Authentication authentication) {
-        userRepository.delete(managedTarget(id, authentication));
+        SysUser target = managedTarget(id, authentication);
+        // 先删除所有关联数据（外键约束）
+        try (java.sql.Connection conn = java.sql.DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/mangrove?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true",
+                "root", "mangrove_db_pass")) {
+            for (String table : new String[]{
+                "letter_image", "tree_journal", "user_decoration", "checkin_record",
+                "comment", "like_record", "fan_work", "quiz_record", "user_quiz_progress",
+                "birthday_wish", "favorite", "barrage_message"
+            }) {
+                try {
+                    java.sql.PreparedStatement ps = conn.prepareStatement("DELETE FROM " + table + " WHERE user_id=?");
+                    ps.setLong(1, id);
+                    ps.executeUpdate();
+                    ps.close();
+                } catch (Exception ignored) {}
+            }
+            // 特殊字段名的表
+            try {
+                java.sql.PreparedStatement ps = conn.prepareStatement("DELETE FROM media_assets WHERE uploader_id=?");
+                ps.setLong(1, id); ps.executeUpdate(); ps.close();
+            } catch (Exception ignored) {}
+            try {
+                java.sql.PreparedStatement ps = conn.prepareStatement("DELETE FROM album WHERE user_id=?");
+                ps.setLong(1, id); ps.executeUpdate(); ps.close();
+            } catch (Exception ignored) {}
+            try {
+                java.sql.PreparedStatement ps = conn.prepareStatement("DELETE FROM music WHERE user_id=?");
+                ps.setLong(1, id); ps.executeUpdate(); ps.close();
+            } catch (Exception ignored) {}
+            try {
+                java.sql.PreparedStatement ps = conn.prepareStatement("DELETE FROM user_tree WHERE user_id=?");
+                ps.setLong(1, id); ps.executeUpdate(); ps.close();
+            } catch (Exception ignored) {}
+            // audit_logs 有两个外键
+            try {
+                java.sql.PreparedStatement ps = conn.prepareStatement("DELETE FROM audit_logs WHERE auditor_id=? OR initiator_id=?");
+                ps.setLong(1, id); ps.setLong(2, id); ps.executeUpdate(); ps.close();
+            } catch (Exception ignored) {}
+        } catch (Exception ignored) {}
+        userRepository.delete(target);
         return Result.success();
     }
 

@@ -299,7 +299,6 @@ const videoCoverShowing = ref([true, true, true])
 
 function playCardVideo(i) {
   activeVideoIdx.value = i
-  slideToCarousel.value = i
   videoCoverShowing.value[i] = false
   const v = videoRefs.value[i]
   if (v) {

@@ -80,7 +80,8 @@
       <!-- 保留原有两列瀑布流布局 -->
       <section v-else class="columns-2 gap-3" aria-label="短视频列表">
         <button v-for="v in displayedVideos" :key="v.id" type="button" class="video-card group relative mb-3 block w-full break-inside-avoid overflow-hidden rounded-lg bg-black text-left shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-green-500/20" @click="openVideo(v)">
-          <video :src="v.thumbnailUrl" muted class="max-h-[400px] w-full bg-black object-cover transition-transform duration-300 group-hover:scale-[1.10]" preload="metadata" @loadeddata="$event.target.currentTime=0.5" />
+          <img v-if="v.coverUrl" :src="v.coverUrl" class="max-h-[400px] w-full bg-black object-cover transition-transform duration-300 group-hover:scale-[1.10]" loading="lazy" @error="e => e.target.style.display='none'" />
+          <video v-else :src="v.thumbnailUrl" muted class="max-h-[400px] w-full bg-black object-cover transition-transform duration-300 group-hover:scale-[1.10]" preload="metadata" @loadeddata="$event.target.currentTime=0.5" />
           <span class="absolute inset-0 bg-black/5 transition-colors group-hover:bg-black/20"></span>
           <span class="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-gray-900 shadow-lg transition-transform group-hover:scale-105">
             <Play class="h-4 w-4 fill-current" />
@@ -156,7 +157,7 @@ async function loadData() {
       const j = await metaRes.json()
       if (j.code === 200 && j.data) {
         videos.value = j.data.filter(m => /\.(mp4|webm|mov|avi)$/i.test(m.filename||'')).map((m,i) => {
-          return { id: 'v'+i, title: m.displayName || (m.filename||'').replace(/\.[^.]+$/,''), thumbnailUrl: m.url, categoryLabel: m.category||'', date: m.photoDate || '', duration: '' }
+          return { id: 'v'+i, title: m.displayName || (m.filename||'').replace(/\.[^.]+$/,''), thumbnailUrl: m.url, coverUrl: m.coverUrl || '', categoryLabel: m.category||'', date: m.photoDate || '', duration: '' }
         })
       }
     }

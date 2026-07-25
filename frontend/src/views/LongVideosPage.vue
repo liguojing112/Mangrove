@@ -104,7 +104,7 @@
             <video v-else :src="video.localVideoUrl" muted preload="metadata" class="h-full w-full object-cover" @loadeddata="$event.target.currentTime=0.5"></video>
             <span class="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/35"></span>
             <span class="absolute left-3 top-3 rounded-full bg-amber-500/20 px-2.5 py-1 text-[10px] font-medium text-amber-300 backdrop-blur-sm">{{ video.category }}</span>
-            <span class="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-amber-300/40 bg-amber-400 text-gray-950 shadow-lg transition-transform group-hover:scale-105"><Play class="h-5 w-5 fill-current" /></span>
+            <span class="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white shadow-lg transition-transform group-hover:scale-105 opacity-0 group-hover:opacity-100"><Play class="h-5 w-5 fill-current" /></span>
           </button>
           <div v-else class="relative aspect-video overflow-hidden bg-gray-900">
             <img v-if="video.coverUrl" :src="video.coverUrl" :alt="video.title" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.10]" />

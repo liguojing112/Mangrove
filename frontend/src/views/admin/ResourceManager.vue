@@ -213,6 +213,17 @@
             <label class="text-sm text-gray-500 mb-1 block">拍摄日期</label>
             <input v-model="editForm.photoDate" type="date" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-mangrove-500" />
           </div>
+          <div>
+            <label class="text-sm text-gray-500 mb-1 block">自定义封面（视频用）</label>
+            <div v-if="editForm.coverUrl" class="mb-2 relative inline-block">
+              <img :src="editForm.coverUrl" class="h-20 w-32 rounded object-cover" />
+              <button class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs flex items-center justify-center" @click="editForm.coverUrl=''">✕</button>
+            </div>
+            <label class="inline-flex cursor-pointer items-center gap-2 border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:border-mangrove-400 rounded-lg">
+              <Upload class="w-4 h-4" />{{ editCoverUploading ? '上传中...' : '上传封面图片' }}
+              <input type="file" accept="image/*" class="hidden" :disabled="editCoverUploading" @change="uploadEditCover" />
+            </label>
+          </div>
         </div>
         <div class="flex justify-end gap-2 mt-6">
           <button class="btn-outline text-sm" @click="editingFile=null">取消</button>
@@ -264,7 +275,8 @@ const pendingFiles = ref([])
 const previewVisible = ref(false)
 const previewFileObj = ref(null)
 const editingFile = ref(null)
-const editForm = ref({ filename: '', displayName: '', seqNo: 0, category: '', photoDate: '' })
+const editForm = ref({ filename: '', displayName: '', seqNo: 0, category: '', photoDate: '', coverUrl: '' })
+const editCoverUploading = ref(false)
 const saveSuccess = ref(false)
 const fileInput = ref(null)
 
@@ -400,8 +412,29 @@ function editFile(file) {
     seqNo: file.seqNo || 0,
     category: file.category || '',
     photoDate: file.photoDate || '',
+    coverUrl: file.coverUrl || '',
   }
   editingFile.value = file
+}
+
+async function uploadEditCover(event) {
+  const file = event.target.files?.[0]
+  event.target.value = ''
+  if (!file) return
+  editCoverUploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch('/api/files/upload', { method: 'POST', headers: { Authorization: `Bearer ${getToken()}` }, body: formData })
+    const json = await res.json()
+    if (json.code === 200 && json.data) {
+      editForm.value.coverUrl = json.data.url || json.data
+    }
+  } catch (e) {
+    console.error('上传封面失败:', e)
+  } finally {
+    editCoverUploading.value = false
+  }
 }
 
 async function saveEdit() {
@@ -412,7 +445,8 @@ async function saveEdit() {
     displayName: editForm.value.displayName || '',
     seqNo: editForm.value.seqNo || 0,
     category: editForm.value.category || '',
-    photoDate: editForm.value.photoDate || ''
+    photoDate: editForm.value.photoDate || '',
+    coverUrl: editForm.value.coverUrl || ''
   }
   if (!meta.filename) return
   try {
