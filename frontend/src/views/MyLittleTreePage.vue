@@ -1,5 +1,36 @@
 <template>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 relative">
+    <!-- 背景装饰：五线谱纹理 + 浮动音符 -->
+    <div class="absolute inset-0 pointer-events-none select-none z-0" aria-hidden="true">
+      <svg class="absolute top-0 left-0 w-full h-full opacity-[0.08]" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="staff-lines-little-tree" x="0" y="0" width="100%" height="150" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="20" x2="100%" y2="20" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="45" x2="100%" y2="45" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="70" x2="100%" y2="70" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="95" x2="100%" y2="95" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="120" x2="100%" y2="120" stroke="#2E8B57" stroke-width="1.5"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#staff-lines-little-tree)"/>
+      </svg>
+      <div class="floating-note note-1">♪</div>
+      <div class="floating-note note-2">♫</div>
+      <div class="floating-note note-3">♬</div>
+      <div class="floating-note note-4">♩</div>
+      <div class="floating-note note-5">♪</div>
+      <div class="floating-note note-6">𝄞</div>
+      <div class="floating-note note-7">♫</div>
+      <div class="floating-note note-8">♬</div>
+      <div class="floating-note note-9">♪</div>
+      <div class="floating-note note-10">𝄢</div>
+      <div class="floating-note note-11">♫</div>
+      <div class="floating-note note-12">♩</div>
+      <div class="floating-note note-13">♬</div>
+      <div class="floating-note note-14">♪</div>
+      <div class="floating-note note-15">𝄞</div>
+    </div>
+
     <!-- Not Logged In -->
     <div v-if="!isLoggedIn" class="max-w-md mx-auto relative z-10">
       <div class="card p-8 text-center">
@@ -63,22 +94,51 @@
         <div v-else class="absolute inset-0 bg-gradient-to-b from-mangrove-50 to-mangrove-100" />
         <div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-mangrove-200/50 to-transparent rounded-b-2xl" />
 
-        <div class="relative z-10 mb-4 w-full h-full flex items-end justify-center">
+        <!-- 阳光光斑 -->
+        <div class="sunbeam sunbeam-1"></div>
+        <div class="sunbeam sunbeam-2"></div>
+        <div class="sunbeam sunbeam-3"></div>
+
+        <!-- 飘落的音符粒子 -->
+        <div class="tree-note-particle tnp-1">♪</div>
+        <div class="tree-note-particle tnp-2">♫</div>
+        <div class="tree-note-particle tnp-3">♬</div>
+        <div class="tree-note-particle tnp-4">♩</div>
+        <div class="tree-note-particle tnp-5">♪</div>
+        <div class="tree-note-particle tnp-6">𝄞</div>
+        <div class="tree-note-particle tnp-7">♫</div>
+        <div class="tree-note-particle tnp-8">♬</div>
+
+        <div class="relative z-10 mb-4 w-full h-full flex items-end justify-center tree-wrapper">
           <img
             :src="treeImage"
             :alt="treeName || '芒果树'"
-            class="h-full w-auto object-contain max-w-none"
+            class="h-full w-auto object-contain max-w-none tree-img-sway"
             @error="treeImageError = true"
           />
-          <svg v-if="treeImageError" viewBox="0 0 280 340" width="220" height="270">
+          <svg v-if="treeImageError" viewBox="0 0 280 340" width="220" height="270" class="tree-img-sway">
             <path d="M133 340 Q136 270 132 220 Q130 185 138 160 Q146 185 144 220 Q140 270 142 340Z" fill="#8B6914" stroke="#6B5210" stroke-width="0.8"/>
-            <circle cx="140" cy="110" r="60" fill="#2E8B57" opacity="0.9"/>
-            <circle cx="105" cy="95" r="48" fill="#3CA55C" opacity="0.85"/>
-            <circle cx="175" cy="95" r="48" fill="#3CA55C" opacity="0.85"/>
-            <circle cx="140" cy="75" r="52" fill="#4DB870" opacity="0.9"/>
-            <circle cx="110" cy="68" r="38" fill="#5CC87A" opacity="0.8"/>
-            <circle cx="170" cy="68" r="38" fill="#5CC87A" opacity="0.8"/>
-            <circle cx="140" cy="55" r="42" fill="#6DD88A" opacity="0.7"/>
+            <circle cx="140" cy="110" r="60" fill="#2E8B57" opacity="0.9">
+              <animate attributeName="r" values="60;62;60" dur="4s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="105" cy="95" r="48" fill="#3CA55C" opacity="0.85">
+              <animate attributeName="r" values="48;50;48" dur="3.5s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="175" cy="95" r="48" fill="#3CA55C" opacity="0.85">
+              <animate attributeName="r" values="48;50;48" dur="4.2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="140" cy="75" r="52" fill="#4DB870" opacity="0.9">
+              <animate attributeName="r" values="52;54;52" dur="3.8s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="110" cy="68" r="38" fill="#5CC87A" opacity="0.8">
+              <animate attributeName="r" values="38;40;38" dur="3.2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="170" cy="68" r="38" fill="#5CC87A" opacity="0.8">
+              <animate attributeName="r" values="38;40;38" dur="4.5s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="140" cy="55" r="42" fill="#6DD88A" opacity="0.7">
+              <animate attributeName="r" values="42;44;42" dur="3.6s" repeatCount="indefinite"/>
+            </circle>
           </svg>
 
           <Sparkles v-if="tree.level >= 3" class="sparkle s1 w-4 h-4 text-mangrove-400" />
@@ -116,19 +176,19 @@
 
       <!-- Stats -->
       <div class="grid grid-cols-4 gap-3 mb-10">
-        <div class="card p-4 text-center">
+        <div class="card p-4 text-center hover:-translate-y-1 hover:shadow-xl hover:shadow-green-500/15 transition-all duration-300 cursor-default">
           <p class="text-xl font-bold text-mangrove-700">{{ tree.totalCheckins ?? 0 }} 天</p>
           <p class="text-xs text-gray-500 mt-1">累计签到</p>
         </div>
-        <div class="card p-4 text-center">
+        <div class="card p-4 text-center hover:-translate-y-1 hover:shadow-xl hover:shadow-green-500/15 transition-all duration-300 cursor-default">
           <p class="text-xl font-bold text-mangrove-700">{{ tree.consecutiveDays }} 天</p>
           <p class="text-xs text-gray-500 mt-1">连续签到</p>
         </div>
-        <div class="card p-4 text-center">
+        <div class="card p-4 text-center hover:-translate-y-1 hover:shadow-xl hover:shadow-green-500/15 transition-all duration-300 cursor-default">
           <p class="text-xl font-bold text-amber-600">{{ tree.points ?? 0 }}</p>
           <p class="text-xs text-gray-500 mt-1">可用积分</p>
         </div>
-        <div class="card p-4 text-center">
+        <div class="card p-4 text-center hover:-translate-y-1 hover:shadow-xl hover:shadow-green-500/15 transition-all duration-300 cursor-default">
           <p class="text-xl font-bold text-mangrove-700">{{ tree.totalLikes }}</p>
           <p class="text-xs text-gray-500 mt-1">累计获赞</p>
         </div>
@@ -163,7 +223,7 @@
           还没有记事，写下你的第一条回忆吧
         </div>
         <div v-else class="space-y-3">
-          <div v-for="journal in journals" :key="journal.id" class="card p-4">
+          <div v-for="journal in journals" :key="journal.id" class="card p-4 hover:-translate-y-1 hover:shadow-xl hover:shadow-green-500/15 transition-all duration-300">
             <div class="flex items-start justify-between">
               <div class="flex-1 min-w-0">
                 <h3 v-if="journal.title" class="font-medium text-gray-900">{{ journal.title }}</h3>
@@ -184,7 +244,7 @@
         <div v-if="ranking.length === 0" class="text-center py-6 text-gray-400 text-sm">暂无排名数据</div>
         <div v-else class="space-y-2">
           <div v-for="(item, idx) in ranking" :key="idx"
-            class="card p-3 flex items-center gap-3"
+            class="card p-3 flex items-center gap-3 hover:-translate-y-1 hover:shadow-xl hover:shadow-green-500/15 transition-all duration-300"
             :class="idx === 0 ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200' : ''">
             <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
               :class="idx === 0 ? 'bg-amber-400 text-white' : idx === 1 ? 'bg-gray-300 text-white' : idx === 2 ? 'bg-amber-600/60 text-white' : 'bg-gray-100 text-gray-500'">
@@ -469,5 +529,131 @@ onMounted(() => {
 }
 .fade-enter-from, .fade-leave-to {
   opacity: 0;
+}
+
+/* === 浮动音符 === */
+.floating-note {
+  position: fixed;
+  color: rgba(46, 139, 87, 0.3);
+  pointer-events: none;
+  user-select: none;
+  z-index: 9999;
+  text-shadow: 0 0 20px rgba(46, 139, 87, 0.4);
+}
+.note-1 { top: 8%; left: 5%; animation: floatNote 4s ease-in-out infinite; font-size: 2.5rem; }
+.note-2 { top: 5%; right: 12%; animation: floatNote 5s ease-in-out infinite 0.5s; font-size: 2rem; }
+.note-3 { top: 15%; left: 18%; animation: floatNote 6s ease-in-out infinite 1s; font-size: 3.5rem; }
+.note-4 { top: 12%; right: 5%; animation: floatNote 4.5s ease-in-out infinite 0.3s; font-size: 3rem; }
+.note-5 { top: 25%; left: 8%; animation: floatNote 5.5s ease-in-out infinite 1.2s; font-size: 2.5rem; }
+.note-6 { top: 20%; right: 18%; animation: floatNote 7s ease-in-out infinite 2s; font-size: 4rem; }
+.note-7 { top: 35%; left: 22%; animation: floatNote 5s ease-in-out infinite 0.8s; font-size: 2.8rem; }
+.note-8 { top: 30%; right: 8%; animation: floatNote 6.5s ease-in-out infinite 1.5s; font-size: 3.5rem; }
+.note-9 { top: 45%; left: 10%; animation: floatNote 4.5s ease-in-out infinite 0.6s; font-size: 2.2rem; }
+.note-10 { top: 40%; right: 20%; animation: floatNote 7.5s ease-in-out infinite 2.5s; font-size: 3.5rem; }
+.note-11 { top: 55%; left: 25%; animation: floatNote 5.5s ease-in-out infinite 1s; font-size: 3rem; }
+.note-12 { top: 60%; right: 10%; animation: floatNote 6s ease-in-out infinite 1.8s; font-size: 2.8rem; }
+.note-13 { top: 70%; left: 8%; animation: floatNote 5s ease-in-out infinite 0.4s; font-size: 3.2rem; }
+.note-14 { top: 75%; right: 22%; animation: floatNote 7s ease-in-out infinite 2.2s; font-size: 2.5rem; }
+.note-15 { top: 85%; left: 30%; animation: floatNote 6.5s ease-in-out infinite 1.5s; font-size: 3.8rem; }
+
+@keyframes floatNote {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.3; }
+  25% { transform: translate(50px, -100px) rotate(20deg); opacity: 0.5; }
+  50% { transform: translate(-40px, -50px) rotate(-15deg); opacity: 0.35; }
+  75% { transform: translate(60px, -120px) rotate(15deg); opacity: 0.45; }
+}
+
+/* === 小树动态效果 === */
+
+/* 树干/图片微风摆动 */
+.tree-wrapper {
+  transform-origin: bottom center;
+}
+.tree-img-sway {
+  animation: treeSway 5s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+@keyframes treeSway {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(1.5deg); }
+  75% { transform: rotate(-1.5deg); }
+}
+
+/* 阳光光斑 */
+.sunbeam {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 223, 100, 0.25), transparent 70%);
+}
+.sunbeam-1 {
+  width: 120px; height: 120px;
+  top: 5%; left: 15%;
+  animation: sunPulse 6s ease-in-out infinite;
+}
+.sunbeam-2 {
+  width: 80px; height: 80px;
+  top: 15%; right: 20%;
+  animation: sunPulse 8s ease-in-out infinite 2s;
+}
+.sunbeam-3 {
+  width: 100px; height: 100px;
+  top: 8%; left: 55%;
+  animation: sunPulse 7s ease-in-out infinite 4s;
+}
+@keyframes sunPulse {
+  0%, 100% { opacity: 0; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* 从树上飘落的音符粒子 */
+.tree-note-particle {
+  position: absolute;
+  z-index: 5;
+  color: rgba(46, 139, 87, 0.6);
+  pointer-events: none;
+  text-shadow: 0 0 6px rgba(46, 139, 87, 0.4);
+  animation: noteFall linear infinite;
+}
+.tnp-1 { left: 35%; font-size: 1.2rem; animation-duration: 8s; animation-delay: 0s; }
+.tnp-2 { left: 50%; font-size: 1rem; animation-duration: 10s; animation-delay: 1.5s; }
+.tnp-3 { left: 60%; font-size: 1.4rem; animation-duration: 7s; animation-delay: 3s; }
+.tnp-4 { left: 40%; font-size: 0.9rem; animation-duration: 9s; animation-delay: 4.5s; }
+.tnp-5 { left: 55%; font-size: 1.1rem; animation-duration: 11s; animation-delay: 2s; }
+.tnp-6 { left: 45%; font-size: 1.3rem; animation-duration: 8.5s; animation-delay: 5.5s; }
+.tnp-7 { left: 65%; font-size: 1rem; animation-duration: 9.5s; animation-delay: 1s; }
+.tnp-8 { left: 30%; font-size: 0.8rem; animation-duration: 12s; animation-delay: 6s; }
+
+@keyframes noteFall {
+  0% {
+    top: 20%;
+    opacity: 0;
+    transform: translateX(0) rotate(0deg) scale(0.5);
+  }
+  10% {
+    opacity: 0.7;
+    transform: translateX(10px) rotate(15deg) scale(1);
+  }
+  30% {
+    opacity: 0.5;
+    transform: translateX(-15px) rotate(-10deg);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateX(20px) rotate(20deg);
+  }
+  70% {
+    opacity: 0.4;
+    transform: translateX(-10px) rotate(-15deg);
+  }
+  90% {
+    opacity: 0.2;
+    transform: translateX(5px) rotate(10deg) scale(0.8);
+  }
+  100% {
+    top: 95%;
+    opacity: 0;
+    transform: translateX(-5px) rotate(-5deg) scale(0.3);
+  }
 }
 </style>

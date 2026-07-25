@@ -1,11 +1,42 @@
 <template>
-  <div class="max-w-3xl mx-auto px-4 sm:px-6 pt-24 pb-16">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 pt-24 pb-16 relative">
+    <!-- 背景装饰：五线谱纹理 + 浮动音符 -->
+    <div class="absolute inset-0 pointer-events-none select-none z-0" aria-hidden="true">
+      <svg class="absolute top-0 left-0 w-full h-full opacity-[0.08]" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="staff-lines-letters" x="0" y="0" width="100%" height="150" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="20" x2="100%" y2="20" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="45" x2="100%" y2="45" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="70" x2="100%" y2="70" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="95" x2="100%" y2="95" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="120" x2="100%" y2="120" stroke="#2E8B57" stroke-width="1.5"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#staff-lines-letters)"/>
+      </svg>
+      <div class="floating-note note-1">♪</div>
+      <div class="floating-note note-2">♫</div>
+      <div class="floating-note note-3">♬</div>
+      <div class="floating-note note-4">♩</div>
+      <div class="floating-note note-5">♪</div>
+      <div class="floating-note note-6">𝄞</div>
+      <div class="floating-note note-7">♫</div>
+      <div class="floating-note note-8">♬</div>
+      <div class="floating-note note-9">♪</div>
+      <div class="floating-note note-10">𝄢</div>
+      <div class="floating-note note-11">♫</div>
+      <div class="floating-note note-12">♩</div>
+      <div class="floating-note note-13">♬</div>
+      <div class="floating-note note-14">♪</div>
+      <div class="floating-note note-15">𝄞</div>
+    </div>
+
     <!-- Header -->
-    <h1 class="section-title mb-4">小芒来信</h1>
-    <p class="text-sm text-gray-500 mb-6">来自艺人的语录、来信、日记与独白</p>
+    <h1 class="section-title mb-4 relative z-10">小芒来信</h1>
+    <p class="text-sm text-gray-500 mb-6 relative z-10">来自艺人的语录、来信、日记与独白</p>
 
     <!-- Category Filter Tabs -->
-    <div class="flex flex-wrap gap-2 mb-8">
+    <div class="flex flex-wrap gap-2 mb-8 relative z-10">
       <button
         v-for="tab in tabs"
         :key="tab.value"
@@ -21,12 +52,12 @@
       </button>
     </div>
 
-    <div v-if="loading" class="text-center py-8">
+    <div v-if="loading" class="text-center py-8 relative z-10">
       <p class="text-gray-400">加载中...</p>
     </div>
 
     <!-- Timeline -->
-    <div v-else class="relative">
+    <div v-else class="relative z-10">
       <!-- Vertical line -->
       <div class="absolute left-4 top-0 bottom-0 w-px bg-gray-200 hidden sm:block"></div>
 
@@ -291,3 +322,44 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+.card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(46, 139, 87, 0.15), 0 4px 8px rgba(46, 139, 87, 0.1);
+}
+
+.floating-note {
+  position: fixed;
+  color: rgba(46, 139, 87, 0.3);
+  pointer-events: none;
+  user-select: none;
+  z-index: 9999;
+  text-shadow: 0 0 20px rgba(46, 139, 87, 0.4);
+}
+.note-1 { top: 8%; left: 5%; animation: floatNote 4s ease-in-out infinite; font-size: 2.5rem; }
+.note-2 { top: 5%; right: 12%; animation: floatNote 5s ease-in-out infinite 0.5s; font-size: 2rem; }
+.note-3 { top: 15%; left: 18%; animation: floatNote 6s ease-in-out infinite 1s; font-size: 3.5rem; }
+.note-4 { top: 12%; right: 5%; animation: floatNote 4.5s ease-in-out infinite 0.3s; font-size: 3rem; }
+.note-5 { top: 25%; left: 8%; animation: floatNote 5.5s ease-in-out infinite 1.2s; font-size: 2.5rem; }
+.note-6 { top: 20%; right: 18%; animation: floatNote 7s ease-in-out infinite 2s; font-size: 4rem; }
+.note-7 { top: 35%; left: 22%; animation: floatNote 5s ease-in-out infinite 0.8s; font-size: 2.8rem; }
+.note-8 { top: 30%; right: 8%; animation: floatNote 6.5s ease-in-out infinite 1.5s; font-size: 3.5rem; }
+.note-9 { top: 45%; left: 10%; animation: floatNote 4.5s ease-in-out infinite 0.6s; font-size: 2.2rem; }
+.note-10 { top: 40%; right: 20%; animation: floatNote 7.5s ease-in-out infinite 2.5s; font-size: 3.5rem; }
+.note-11 { top: 55%; left: 25%; animation: floatNote 5.5s ease-in-out infinite 1s; font-size: 3rem; }
+.note-12 { top: 60%; right: 10%; animation: floatNote 6s ease-in-out infinite 1.8s; font-size: 2.8rem; }
+.note-13 { top: 70%; left: 8%; animation: floatNote 5s ease-in-out infinite 0.4s; font-size: 3.2rem; }
+.note-14 { top: 75%; right: 22%; animation: floatNote 7s ease-in-out infinite 2.2s; font-size: 2.5rem; }
+.note-15 { top: 85%; left: 30%; animation: floatNote 6.5s ease-in-out infinite 1.5s; font-size: 3.8rem; }
+
+@keyframes floatNote {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.3; }
+  25% { transform: translate(50px, -100px) rotate(20deg); opacity: 0.5; }
+  50% { transform: translate(-40px, -50px) rotate(-15deg); opacity: 0.35; }
+  75% { transform: translate(60px, -120px) rotate(15deg); opacity: 0.45; }
+}
+</style>

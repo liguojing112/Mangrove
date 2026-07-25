@@ -1,6 +1,39 @@
 <template>
-  <div class="min-h-screen overflow-x-hidden bg-gray-50 pt-6">
-    <section class="photo-hero-shell" aria-label="精选照片轮播">
+  <div class="min-h-screen overflow-x-hidden bg-gray-50 pt-6 relative">
+    <!-- 背景装饰：五线谱纹理 + 浮动音符 -->
+    <div class="absolute inset-0 pointer-events-none select-none z-0" aria-hidden="true">
+      <!-- 五线谱底纹 -->
+      <svg class="absolute top-0 left-0 w-full h-full opacity-[0.08]" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="staff-lines-photo" x="0" y="0" width="100%" height="150" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="20" x2="100%" y2="20" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="45" x2="100%" y2="45" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="70" x2="100%" y2="70" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="95" x2="100%" y2="95" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="120" x2="100%" y2="120" stroke="#2E8B57" stroke-width="1.5"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#staff-lines-photo)"/>
+      </svg>
+      <!-- 浮动音符装饰 -->
+      <div class="floating-note note-1">♪</div>
+      <div class="floating-note note-2">♫</div>
+      <div class="floating-note note-3">♬</div>
+      <div class="floating-note note-4">♩</div>
+      <div class="floating-note note-5">♪</div>
+      <div class="floating-note note-6">𝄞</div>
+      <div class="floating-note note-7">♫</div>
+      <div class="floating-note note-8">♬</div>
+      <div class="floating-note note-9">♪</div>
+      <div class="floating-note note-10">𝄢</div>
+      <div class="floating-note note-11">♫</div>
+      <div class="floating-note note-12">♩</div>
+      <div class="floating-note note-13">♬</div>
+      <div class="floating-note note-14">♪</div>
+      <div class="floating-note note-15">𝄞</div>
+    </div>
+
+    <section class="photo-hero-shell relative z-10" aria-label="精选照片轮播">
       <Swiper
         class="photo-hero-swiper"
         :modules="swiperModules"
@@ -40,7 +73,7 @@
       </Swiper>
     </section>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 relative z-10">
       <!-- 搜索框 -->
       <div class="mb-5 max-w-xl mx-auto">
         <div class="rounded-full h-11 bg-white border-2 border-pink-200 flex items-center px-2 shadow-sm">
@@ -66,12 +99,21 @@
         <Camera class="w-10 h-10 mx-auto mb-2" /><p>暂无照片</p>
       </div>
       <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        <div v-for="p in displayedPhotos" :key="p.id" @click="openPreview(p)"
-          class="group rounded-3xl overflow-hidden bg-white border-[4.5px] border-teal-200 shadow-sm hover:shadow-md transition-all cursor-pointer">
+        <div v-for="(p, idx) in displayedPhotos" :key="p.id" @click="openPreview(p)"
+          class="photo-card group rounded-3xl overflow-hidden bg-white border-[4.5px] border-teal-200 shadow-sm cursor-pointer"
+          :style="{ animationDelay: (idx % 8) * 0.06 + 's' }">
           <div class="aspect-[3/4] bg-pink-50 overflow-hidden relative">
-            <img v-if="p.fileUrl" :src="p.fileUrl" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+            <img v-if="p.fileUrl" :src="p.fileUrl" class="w-full h-full object-cover group-hover:scale-110 group-hover:brightness-110 transition-all duration-500" loading="lazy" />
             <Camera v-else class="w-10 h-10 text-pink-200" />
+            <!-- hover 浮动音符 -->
+            <div class="photo-note photo-note-1">♪</div>
+            <div class="photo-note photo-note-2">♫</div>
+            <div class="photo-note photo-note-3">♬</div>
+            <!-- hover 底部渐变遮罩 -->
+            <div class="photo-card-overlay"></div>
           </div>
+          <!-- 底部绿色光线 -->
+          <div class="photo-card-line"></div>
         </div>
       </div>
 
@@ -588,5 +630,126 @@ onMounted(loadData)
   background: #fafafa;
   border-radius: 0.5rem;
   overflow: hidden;
+}
+
+/* === 浮动音符 - 视口固定，明显可见 === */
+.floating-note {
+  position: fixed;
+  color: rgba(46, 139, 87, 0.3);
+  pointer-events: none;
+  user-select: none;
+  z-index: 9999;
+  text-shadow: 0 0 20px rgba(46, 139, 87, 0.4);
+}
+
+.note-1 { top: 8%; left: 5%; animation: floatNote 4s ease-in-out infinite; font-size: 2.5rem; }
+.note-2 { top: 5%; right: 12%; animation: floatNote 5s ease-in-out infinite 0.5s; font-size: 2rem; }
+.note-3 { top: 15%; left: 18%; animation: floatNote 6s ease-in-out infinite 1s; font-size: 3.5rem; }
+.note-4 { top: 12%; right: 5%; animation: floatNote 4.5s ease-in-out infinite 0.3s; font-size: 3rem; }
+.note-5 { top: 25%; left: 8%; animation: floatNote 5.5s ease-in-out infinite 1.2s; font-size: 2.5rem; }
+.note-6 { top: 20%; right: 18%; animation: floatNote 7s ease-in-out infinite 2s; font-size: 4rem; }
+.note-7 { top: 35%; left: 22%; animation: floatNote 5s ease-in-out infinite 0.8s; font-size: 2.8rem; }
+.note-8 { top: 30%; right: 8%; animation: floatNote 6.5s ease-in-out infinite 1.5s; font-size: 3.5rem; }
+.note-9 { top: 45%; left: 10%; animation: floatNote 4.5s ease-in-out infinite 0.6s; font-size: 2.2rem; }
+.note-10 { top: 40%; right: 20%; animation: floatNote 7.5s ease-in-out infinite 2.5s; font-size: 3.5rem; }
+.note-11 { top: 55%; left: 25%; animation: floatNote 5.5s ease-in-out infinite 1s; font-size: 3rem; }
+.note-12 { top: 60%; right: 10%; animation: floatNote 6s ease-in-out infinite 1.8s; font-size: 2.8rem; }
+.note-13 { top: 70%; left: 8%; animation: floatNote 5s ease-in-out infinite 0.4s; font-size: 3.2rem; }
+.note-14 { top: 75%; right: 22%; animation: floatNote 7s ease-in-out infinite 2.2s; font-size: 2.5rem; }
+.note-15 { top: 85%; left: 30%; animation: floatNote 6.5s ease-in-out infinite 1.5s; font-size: 3.8rem; }
+
+@keyframes floatNote {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.3; }
+  25% { transform: translate(50px, -100px) rotate(20deg); opacity: 0.5; }
+  50% { transform: translate(-40px, -50px) rotate(-15deg); opacity: 0.35; }
+  75% { transform: translate(60px, -120px) rotate(15deg); opacity: 0.45; }
+}
+
+/* === 照片卡片 hover 动效增强 === */
+.photo-card {
+  position: relative;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+  animation: photoFadeInUp 0.6s ease-out both;
+}
+
+.photo-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 20px 40px -12px rgba(46, 139, 87, 0.25), 0 8px 16px -6px rgba(46, 139, 87, 0.15);
+}
+
+.photo-card:hover .photo-card-line {
+  transform: scaleX(0.95);
+  opacity: 1;
+}
+
+/* 底部绿色光线 */
+.photo-card-line {
+  position: absolute;
+  bottom: 0;
+  left: 5%;
+  right: 5%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #2E8B57, transparent);
+  transform: scaleX(0);
+  opacity: 0;
+  transition: transform 0.5s ease, opacity 0.5s ease;
+  z-index: 5;
+}
+
+/* hover 底部渐变遮罩 */
+.photo-card-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  background: linear-gradient(to top, rgba(46, 139, 87, 0.3), transparent);
+  transition: height 0.4s ease;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.photo-card:hover .photo-card-overlay {
+  height: 40%;
+}
+
+/* hover 浮动音符 */
+.photo-note {
+  position: absolute;
+  z-index: 4;
+  color: rgba(46, 139, 87, 0.85);
+  font-size: 0.9rem;
+  opacity: 0;
+  pointer-events: none;
+  text-shadow: 0 0 8px rgba(46, 139, 87, 0.5);
+  transition: opacity 0.3s ease, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.photo-card:hover .photo-note-1 {
+  opacity: 1;
+  transform: translate(15px, -25px) rotate(-15deg);
+  transition-delay: 0s;
+}
+
+.photo-card:hover .photo-note-2 {
+  opacity: 1;
+  transform: translate(-10px, -35px) rotate(12deg);
+  transition-delay: 0.075s;
+}
+
+.photo-card:hover .photo-note-3 {
+  opacity: 1;
+  transform: translate(8px, -20px) rotate(-8deg);
+  transition-delay: 0.15s;
+}
+
+.photo-note-1 { top: 40%; right: 15%; }
+.photo-note-2 { top: 55%; left: 20%; font-size: 0.75rem; }
+.photo-note-3 { top: 30%; left: 50%; font-size: 0.7rem; }
+
+/* 卡片入场动画 */
+@keyframes photoFadeInUp {
+  from { opacity: 0; transform: translateY(25px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 </style>

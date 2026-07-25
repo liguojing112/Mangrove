@@ -1,7 +1,38 @@
 <template>
-  <main class="min-h-screen bg-gray-50 pb-20">
+  <main class="relative min-h-screen bg-gray-50 pb-20">
+    <!-- 背景装饰：五线谱纹理 + 浮动音符 -->
+    <div class="absolute inset-0 pointer-events-none select-none z-0" aria-hidden="true">
+      <svg class="absolute top-0 left-0 w-full h-full opacity-[0.08]" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="staff-lines-long-videos" x="0" y="0" width="100%" height="150" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="20" x2="100%" y2="20" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="45" x2="100%" y2="45" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="70" x2="100%" y2="70" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="95" x2="100%" y2="95" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="120" x2="100%" y2="120" stroke="#2E8B57" stroke-width="1.5"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#staff-lines-long-videos)"/>
+      </svg>
+      <div class="floating-note note-1">♪</div>
+      <div class="floating-note note-2">♫</div>
+      <div class="floating-note note-3">♬</div>
+      <div class="floating-note note-4">♩</div>
+      <div class="floating-note note-5">♪</div>
+      <div class="floating-note note-6">𝄞</div>
+      <div class="floating-note note-7">♫</div>
+      <div class="floating-note note-8">♬</div>
+      <div class="floating-note note-9">♪</div>
+      <div class="floating-note note-10">𝄢</div>
+      <div class="floating-note note-11">♫</div>
+      <div class="floating-note note-12">♩</div>
+      <div class="floating-note note-13">♬</div>
+      <div class="floating-note note-14">♪</div>
+      <div class="floating-note note-15">𝄞</div>
+    </div>
+
     <!-- Hero Video Player -->
-    <section class="pt-20 pb-6">
+    <section class="relative z-10 pt-20 pb-6">
       <div class="max-w-5xl mx-auto px-4">
         <div v-if="heroVideo" class="relative overflow-hidden bg-black shadow-2xl border-2 border-gray-900">
           <video :src="heroVideo.localVideoUrl" controls autoplay muted class="block w-full max-h-[70vh] bg-black" />
@@ -67,16 +98,16 @@
         <Clapperboard class="mx-auto mb-3 h-10 w-10 text-gray-300" />暂无长视频
       </div>
       <section v-else class="grid gap-6 md:grid-cols-2" aria-label="长视频列表">
-        <article v-for="video in filteredVideos" :key="video.id" class="group overflow-hidden rounded-3xl bg-white border-[4.5px] border-teal-200 shadow-sm hover:shadow-md transition-all">
+        <article v-for="video in filteredVideos" :key="video.id" class="group overflow-hidden rounded-3xl bg-white border-[4.5px] border-teal-200 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-green-500/20">
           <button v-if="video.localVideoUrl" type="button" class="relative block aspect-video w-full overflow-hidden bg-gray-900" :aria-label="`播放 ${video.title}`" @click="playingVideo = video.localVideoUrl">
-            <img v-if="video.coverUrl" :src="video.coverUrl" :alt="video.title" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+            <img v-if="video.coverUrl" :src="video.coverUrl" :alt="video.title" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.10]" />
             <video v-else :src="video.localVideoUrl" muted preload="metadata" class="h-full w-full object-cover" @loadeddata="$event.target.currentTime=0.5"></video>
             <span class="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/35"></span>
             <span class="absolute left-3 top-3 rounded-full bg-amber-500/20 px-2.5 py-1 text-[10px] font-medium text-amber-300 backdrop-blur-sm">{{ video.category }}</span>
             <span class="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-amber-300/40 bg-amber-400 text-gray-950 shadow-lg transition-transform group-hover:scale-105"><Play class="h-5 w-5 fill-current" /></span>
           </button>
           <div v-else class="relative aspect-video overflow-hidden bg-gray-900">
-            <img v-if="video.coverUrl" :src="video.coverUrl" :alt="video.title" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+            <img v-if="video.coverUrl" :src="video.coverUrl" :alt="video.title" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.10]" />
             <div v-else class="flex h-full items-center justify-center"><Clapperboard class="h-10 w-10 text-gray-700" /></div>
             <span class="absolute left-3 top-3 rounded-full bg-amber-500/20 px-2.5 py-1 text-[10px] font-medium text-amber-300 backdrop-blur-sm">{{ video.category }}</span>
           </div>
@@ -162,3 +193,37 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+/* === 浮动音符 === */
+.floating-note {
+  position: fixed;
+  color: rgba(46, 139, 87, 0.3);
+  pointer-events: none;
+  user-select: none;
+  z-index: 9999;
+  text-shadow: 0 0 20px rgba(46, 139, 87, 0.4);
+}
+.note-1 { top: 8%; left: 5%; animation: floatNote 4s ease-in-out infinite; font-size: 2.5rem; }
+.note-2 { top: 5%; right: 12%; animation: floatNote 5s ease-in-out infinite 0.5s; font-size: 2rem; }
+.note-3 { top: 15%; left: 18%; animation: floatNote 6s ease-in-out infinite 1s; font-size: 3.5rem; }
+.note-4 { top: 12%; right: 5%; animation: floatNote 4.5s ease-in-out infinite 0.3s; font-size: 3rem; }
+.note-5 { top: 25%; left: 8%; animation: floatNote 5.5s ease-in-out infinite 1.2s; font-size: 2.5rem; }
+.note-6 { top: 20%; right: 18%; animation: floatNote 7s ease-in-out infinite 2s; font-size: 4rem; }
+.note-7 { top: 35%; left: 22%; animation: floatNote 5s ease-in-out infinite 0.8s; font-size: 2.8rem; }
+.note-8 { top: 30%; right: 8%; animation: floatNote 6.5s ease-in-out infinite 1.5s; font-size: 3.5rem; }
+.note-9 { top: 45%; left: 10%; animation: floatNote 4.5s ease-in-out infinite 0.6s; font-size: 2.2rem; }
+.note-10 { top: 40%; right: 20%; animation: floatNote 7.5s ease-in-out infinite 2.5s; font-size: 3.5rem; }
+.note-11 { top: 55%; left: 25%; animation: floatNote 5.5s ease-in-out infinite 1s; font-size: 3rem; }
+.note-12 { top: 60%; right: 10%; animation: floatNote 6s ease-in-out infinite 1.8s; font-size: 2.8rem; }
+.note-13 { top: 70%; left: 8%; animation: floatNote 5s ease-in-out infinite 0.4s; font-size: 3.2rem; }
+.note-14 { top: 75%; right: 22%; animation: floatNote 7s ease-in-out infinite 2.2s; font-size: 2.5rem; }
+.note-15 { top: 85%; left: 30%; animation: floatNote 6.5s ease-in-out infinite 1.5s; font-size: 3.8rem; }
+
+@keyframes floatNote {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.3; }
+  25% { transform: translate(50px, -100px) rotate(20deg); opacity: 0.5; }
+  50% { transform: translate(-40px, -50px) rotate(-15deg); opacity: 0.35; }
+  75% { transform: translate(60px, -120px) rotate(15deg); opacity: 0.45; }
+}
+</style>

@@ -1,12 +1,43 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50 relative">
+    <!-- 背景装饰：五线谱纹理 + 浮动音符 -->
+    <div class="absolute inset-0 pointer-events-none select-none z-0" aria-hidden="true">
+      <svg class="absolute top-0 left-0 w-full h-full opacity-[0.08]" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="staff-lines-merchandise" x="0" y="0" width="100%" height="150" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="20" x2="100%" y2="20" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="45" x2="100%" y2="45" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="70" x2="100%" y2="70" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="95" x2="100%" y2="95" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="120" x2="100%" y2="120" stroke="#2E8B57" stroke-width="1.5"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#staff-lines-merchandise)"/>
+      </svg>
+      <div class="floating-note note-1">♪</div>
+      <div class="floating-note note-2">♫</div>
+      <div class="floating-note note-3">♬</div>
+      <div class="floating-note note-4">♩</div>
+      <div class="floating-note note-5">♪</div>
+      <div class="floating-note note-6">𝄞</div>
+      <div class="floating-note note-7">♫</div>
+      <div class="floating-note note-8">♬</div>
+      <div class="floating-note note-9">♪</div>
+      <div class="floating-note note-10">𝄢</div>
+      <div class="floating-note note-11">♫</div>
+      <div class="floating-note note-12">♩</div>
+      <div class="floating-note note-13">♬</div>
+      <div class="floating-note note-14">♪</div>
+      <div class="floating-note note-15">𝄞</div>
+    </div>
+
     <!-- Hero Card Showcase -->
-    <section class="pt-20 pb-6">
+    <section class="pt-20 pb-6 relative z-10">
       <div class="max-w-5xl mx-auto px-4">
         <div v-if="heroCards.length > 0" class="grid grid-cols-4 md:grid-cols-5 gap-3">
           <div v-for="(item, i) in heroCards" :key="i" class="group cursor-pointer"
             @click="openDouble(item, '卡面', '卡背')">
-            <div class="relative aspect-[2/3] overflow-hidden rounded-xl border-[4.5px] border-pink-200 bg-white shadow-sm hover:shadow-md transition-all hover:border-pink-400">
+            <div class="relative aspect-[2/3] overflow-hidden rounded-xl border-[4.5px] border-pink-200 bg-white shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-pink-400">
               <img v-if="item.frontImageUrl" :src="item.frontImageUrl" :alt="item.name" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
               <div v-else class="absolute inset-0 flex items-center justify-center text-3xl text-gray-300">🃏</div>
               <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 p-2">
@@ -33,7 +64,7 @@
         <div class="flex flex-wrap gap-2"><button v-for="filter in cardFilters" :key="filter" class="rounded-full border px-3 py-1 text-xs font-medium transition-all" :class="cardFilter === filter ? 'border-teal-400 bg-teal-50 text-teal-600' : 'border-gray-200 text-gray-500 hover:text-gray-700'" @click="cardFilter = filter">{{ filter }}</button></div>
         <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
           <button v-for="item in filteredCards" :key="item.id || item.name" type="button" class="group text-left" :aria-label="`查看小卡：${item.name}`" @click="openDouble(item, '卡面', '卡背')">
-            <div class="relative aspect-[2/3] overflow-hidden rounded-xl border-[4.5px] border-teal-200 bg-white transition-all hover:border-teal-400 shadow-sm hover:shadow-md">
+            <div class="relative aspect-[2/3] overflow-hidden rounded-xl border-[4.5px] border-teal-200 bg-white transition-all duration-300 hover:border-teal-400 shadow-sm hover:shadow-xl hover:-translate-y-1">
               <img v-if="item.frontImageUrl" :src="item.frontImageUrl" :alt="item.name" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
               <div v-else class="absolute inset-0 flex items-center justify-center text-2xl text-gray-700"><ImageIcon /></div>
               <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 p-3"><p class="truncate text-xs font-medium text-white">{{ item.name }}</p><div class="mt-1 flex items-center gap-2"><span :class="[rarityClass(item.rarity), 'rounded px-1.5 py-0.5 text-[10px]']">{{ item.rarity }}</span><span class="truncate text-[10px] text-gray-500">产出：{{ item.producerName }}</span></div></div>
@@ -46,7 +77,7 @@
         <header><h2 class="text-2xl font-light text-gray-800">纸质周边</h2><p class="mt-1 text-sm text-gray-500">手幅 · 明信片 · 书签 · 贴纸 · 台历 · 海报</p></header>
         <div class="columns-2 gap-3 lg:columns-4" aria-label="纸质周边列表">
           <button v-for="item in paperItems" :key="item.id || item.name" type="button" class="group mb-3 block w-full break-inside-avoid text-left" @click="openDouble(item, '正面', '背面')">
-            <div class="relative overflow-hidden rounded-xl border-[4.5px] border-teal-200 bg-white transition-all hover:border-teal-400 shadow-sm hover:shadow-md">
+            <div class="relative overflow-hidden rounded-xl border-[4.5px] border-teal-200 bg-white transition-all duration-300 hover:border-teal-400 shadow-sm hover:shadow-xl hover:-translate-y-1">
               <img v-if="item.frontImageUrl" :src="item.frontImageUrl" :alt="`${item.name}正面`" class="block h-auto w-full transition-transform duration-300 group-hover:scale-105" />
               <div v-else class="flex aspect-[4/3] items-center justify-center text-gray-700"><ImageIcon /></div>
               <span class="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium text-gray-800">{{ item.type }}</span>
@@ -60,7 +91,7 @@
         <header><h2 class="text-2xl font-light text-gray-800">实物应援</h2><p class="mt-1 text-sm text-gray-500">徽章 · 立牌 · 钥匙扣 · 透卡 · 收纳周边</p></header>
         <div class="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
           <button v-for="item in physicalItems" :key="item.id || item.name" type="button" class="group text-left" @click="selectedSingle = item">
-            <div class="rounded-xl border-[4.5px] border-teal-200 bg-white p-4 shadow-sm hover:shadow-md transition-all hover:border-teal-400">
+            <div class="rounded-xl border-[4.5px] border-teal-200 bg-white p-4 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-teal-400">
               <div class="relative mb-3 aspect-square overflow-hidden rounded-lg bg-gray-100"><img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><div v-else class="flex h-full items-center justify-center text-gray-700"><ImageIcon /></div></div>
               <p class="truncate text-sm font-medium text-white">{{ item.name }}</p><div class="mt-1.5 flex items-center justify-between gap-2"><span class="inline-block rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-400">{{ item.type }}</span><span class="truncate text-[10px] text-gray-500">产出：{{ item.producerName }}</span></div>
             </div>
@@ -73,7 +104,7 @@
         <div class="flex flex-wrap gap-2"><button v-for="filter in digitalFilters" :key="filter" class="rounded-full border px-3 py-1 text-xs transition-all" :class="digitalFilter === filter ? 'border-teal-400 bg-teal-50 text-teal-600' : 'border-gray-200 text-gray-500 hover:text-gray-700'" @click="digitalFilter = filter">{{ filter }}</button></div>
         <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
           <button v-for="item in filteredDigitalItems" :key="item.id || item.name" type="button" class="group text-left" @click="selectedSingle = item">
-            <div class="overflow-hidden rounded-xl border-[4.5px] border-teal-200 bg-white p-1 shadow-sm hover:shadow-md transition-all hover:border-teal-400">
+            <div class="overflow-hidden rounded-xl border-[4.5px] border-teal-200 bg-white p-1 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-teal-400">
               <div class="relative aspect-[4/5] overflow-hidden rounded-lg bg-gray-100"><img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><div v-else class="flex h-full items-center justify-center text-gray-400"><ImageIcon /></div><span class="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[10px] text-white">{{ item.type }}</span></div>
               <div class="px-2 py-2 text-center"><p class="truncate text-xs text-gray-400">{{ item.name }}</p><p class="mt-1 truncate text-[10px] text-gray-600">产出：{{ item.producerName }}</p></div>
             </div>
@@ -84,7 +115,7 @@
       <section id="s5" class="scroll-mt-28 space-y-6">
         <header><h2 class="text-2xl font-light text-gray-800">往期应援存档</h2><p class="mt-1 text-sm text-gray-500">生日应援 · 回归应援 · 线下活动 · 周年纪念</p></header>
         <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          <button v-for="item in archiveItems" :key="item.id || item.name" type="button" class="group overflow-hidden rounded-3xl border-[4.5px] border-teal-200 bg-white shadow-sm hover:shadow-md transition-all text-left hover:border-teal-400" @click="selectedSingle = item">
+          <button v-for="item in archiveItems" :key="item.id || item.name" type="button" class="group overflow-hidden rounded-3xl border-[4.5px] border-teal-200 bg-white shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-left hover:border-teal-400" @click="selectedSingle = item">
             <div class="relative aspect-video bg-gray-100"><img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" /><div v-else class="flex h-full items-center justify-center text-gray-400"><ImageIcon /></div></div>
             <div class="p-4"><p class="text-xs text-amber-400">{{ item.date || item.type }}</p><h3 class="mt-1 truncate text-base font-medium text-white">{{ item.name }}</h3><p class="mt-1 text-[10px] text-gray-600">产出：{{ item.producerName }}</p><p v-if="item.description" class="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">{{ item.description }}</p></div>
           </button>
@@ -107,7 +138,7 @@
       <section id="s7" class="scroll-mt-28 space-y-6">
         <header><h2 class="text-2xl font-light text-gray-800">抽奖活动</h2><p class="mt-1 text-sm text-gray-500">参与抽奖，赢取小卡和周边</p></header>
         <div v-if="lotteries.length" class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          <div v-for="lottery in lotteries" :key="lottery.id" class="rounded-3xl border-[4.5px] border-teal-200 bg-white shadow-sm hover:shadow-md transition-all p-5">
+          <div v-for="lottery in lotteries" :key="lottery.id" class="rounded-3xl border-[4.5px] border-teal-200 bg-white shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 p-5">
             <div class="flex items-start justify-between mb-3">
               <span class="px-2 py-0.5 rounded-full text-[10px] font-medium" :class="lotteryStatusClass(lottery.status)">{{ lotteryStatusLabel(lottery.status) }}</span>
               <span class="text-[10px] text-gray-500">{{ lottery.entryCount }} 人参与</span>
@@ -274,3 +305,36 @@ function lotteryStatusClass(s) { return { PENDING: 'bg-gray-700 text-gray-400', 
 async function fetchMerchandise() { try { const response = await fetch('/api/public/merchandise?page=0&size=100'); const json = await response.json(); if (response.ok && json.code === 200) merchandise.value = json.data?.content || [] } catch { merchandise.value = [] } }
 onMounted(() => { fetchMerchandise(); fetchLotteries() })
 </script>
+
+<style scoped>
+.floating-note {
+  position: fixed;
+  color: rgba(46, 139, 87, 0.3);
+  pointer-events: none;
+  user-select: none;
+  z-index: 9999;
+  text-shadow: 0 0 20px rgba(46, 139, 87, 0.4);
+}
+.note-1 { top: 8%; left: 5%; animation: floatNote 4s ease-in-out infinite; font-size: 2.5rem; }
+.note-2 { top: 5%; right: 12%; animation: floatNote 5s ease-in-out infinite 0.5s; font-size: 2rem; }
+.note-3 { top: 15%; left: 18%; animation: floatNote 6s ease-in-out infinite 1s; font-size: 3.5rem; }
+.note-4 { top: 12%; right: 5%; animation: floatNote 4.5s ease-in-out infinite 0.3s; font-size: 3rem; }
+.note-5 { top: 25%; left: 8%; animation: floatNote 5.5s ease-in-out infinite 1.2s; font-size: 2.5rem; }
+.note-6 { top: 20%; right: 18%; animation: floatNote 7s ease-in-out infinite 2s; font-size: 4rem; }
+.note-7 { top: 35%; left: 22%; animation: floatNote 5s ease-in-out infinite 0.8s; font-size: 2.8rem; }
+.note-8 { top: 30%; right: 8%; animation: floatNote 6.5s ease-in-out infinite 1.5s; font-size: 3.5rem; }
+.note-9 { top: 45%; left: 10%; animation: floatNote 4.5s ease-in-out infinite 0.6s; font-size: 2.2rem; }
+.note-10 { top: 40%; right: 20%; animation: floatNote 7.5s ease-in-out infinite 2.5s; font-size: 3.5rem; }
+.note-11 { top: 55%; left: 25%; animation: floatNote 5.5s ease-in-out infinite 1s; font-size: 3rem; }
+.note-12 { top: 60%; right: 10%; animation: floatNote 6s ease-in-out infinite 1.8s; font-size: 2.8rem; }
+.note-13 { top: 70%; left: 8%; animation: floatNote 5s ease-in-out infinite 0.4s; font-size: 3.2rem; }
+.note-14 { top: 75%; right: 22%; animation: floatNote 7s ease-in-out infinite 2.2s; font-size: 2.5rem; }
+.note-15 { top: 85%; left: 30%; animation: floatNote 6.5s ease-in-out infinite 1.5s; font-size: 3.8rem; }
+
+@keyframes floatNote {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.3; }
+  25% { transform: translate(50px, -100px) rotate(20deg); opacity: 0.5; }
+  50% { transform: translate(-40px, -50px) rotate(-15deg); opacity: 0.35; }
+  75% { transform: translate(60px, -120px) rotate(15deg); opacity: 0.45; }
+}
+</style>

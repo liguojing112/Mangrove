@@ -1,20 +1,51 @@
 <template>
-  <div class="bg-gray-50 min-h-screen">
+  <div class="bg-gray-50 min-h-screen relative">
+    <!-- 背景装饰：五线谱纹理 + 浮动音符 -->
+    <div class="absolute inset-0 pointer-events-none select-none z-0" aria-hidden="true">
+      <svg class="absolute top-0 left-0 w-full h-full opacity-[0.08]" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="staff-lines-works" x="0" y="0" width="100%" height="150" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="20" x2="100%" y2="20" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="45" x2="100%" y2="45" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="70" x2="100%" y2="70" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="95" x2="100%" y2="95" stroke="#2E8B57" stroke-width="1.5"/>
+            <line x1="0" y1="120" x2="100%" y2="120" stroke="#2E8B57" stroke-width="1.5"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#staff-lines-works)"/>
+      </svg>
+      <div class="floating-note note-1">♪</div>
+      <div class="floating-note note-2">♫</div>
+      <div class="floating-note note-3">♬</div>
+      <div class="floating-note note-4">♩</div>
+      <div class="floating-note note-5">♪</div>
+      <div class="floating-note note-6">𝄞</div>
+      <div class="floating-note note-7">♫</div>
+      <div class="floating-note note-8">♬</div>
+      <div class="floating-note note-9">♪</div>
+      <div class="floating-note note-10">𝄢</div>
+      <div class="floating-note note-11">♫</div>
+      <div class="floating-note note-12">♩</div>
+      <div class="floating-note note-13">♬</div>
+      <div class="floating-note note-14">♪</div>
+      <div class="floating-note note-15">𝄞</div>
+    </div>
+
     <!-- PAGE HEADER - Card Style -->
-    <section class="pt-16 pb-8">
+    <section class="pt-16 pb-8 relative z-10">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 text-white shadow-lg">
+          <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
             <div class="text-3xl mb-2">📸</div>
             <h3 class="font-bold text-lg">高清路透</h3>
             <p class="text-white/70 text-sm mt-1">线下活动 · 机场上班路</p>
           </div>
-          <div class="bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl p-6 text-white shadow-lg">
+          <div class="bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
             <div class="text-3xl mb-2">🏆</div>
             <h3 class="font-bold text-lg">创作者殿堂</h3>
             <p class="text-white/70 text-sm mt-1">独家高端产出专区</p>
           </div>
-          <div class="bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+          <div class="bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
             <div class="text-3xl mb-2">✨</div>
             <h3 class="font-bold text-lg">精选展厅</h3>
             <p class="text-white/70 text-sm mt-1">月度最佳修图 · 剪辑 · 饭绘</p>
@@ -78,7 +109,7 @@
           <p class="text-gray-400">暂无创作者</p>
         </div>
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div v-for="(item, index) in rankItems" :key="item.id" class="rounded-3xl bg-white border-[4.5px] border-teal-200 shadow-sm hover:shadow-md transition-all p-5">
+          <div v-for="(item, index) in rankItems" :key="item.id" class="rounded-3xl bg-white border-[4.5px] border-teal-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 p-5">
             <div class="flex items-center gap-4">
               <div :class="['w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm font-bold', index < 3 ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-400']">{{ index + 1 }}</div>
               <div class="mx-auto flex w-12 h-12 items-center justify-center rounded-full border text-lg font-semibold shrink-0" :style="avatarStyle(item.extraData?.publicId)">
@@ -108,7 +139,7 @@
         </div>
         <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div v-for="item in showcaseItems" :key="item.id" class="group cursor-pointer">
-            <div class="rounded-3xl overflow-hidden bg-white border-[4.5px] border-teal-200 shadow-sm hover:shadow-md transition-all">
+            <div class="rounded-3xl overflow-hidden bg-white border-[4.5px] border-teal-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
               <div class="aspect-[4/3] flex items-center justify-center relative bg-gray-100">
                 <img v-if="getShowcaseImage(item)" :src="getShowcaseImage(item)" class="w-full h-full object-cover" />
                 <span v-else class="text-4xl opacity-20">🖼️</span>
@@ -143,7 +174,7 @@
           <p class="text-gray-400">暂无创作者</p>
         </div>
         <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div v-for="(item, index) in honorItems" :key="item.id" class="rounded-3xl bg-white border-[4.5px] border-teal-200 shadow-sm hover:shadow-md transition-all p-5 text-center">
+          <div v-for="(item, index) in honorItems" :key="item.id" class="rounded-3xl bg-white border-[4.5px] border-teal-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 p-5 text-center">
             <div :class="['text-4xl font-bold mb-2', index < 3 ? 'text-amber-500' : 'text-gray-400']">{{ index + 1 }}</div>
             <div class="mx-auto flex w-14 h-14 items-center justify-center rounded-full border text-xl font-semibold" :style="avatarStyle(item.extraData?.publicId)">
               {{ avatarText(item.extraData?.username) }}
@@ -411,3 +442,36 @@ async function submitWork() {
 const nav = [{ id: 's1', label: '高清路透' }, { id: 's2', label: '创作者榜' }, { id: 's3', label: '精选展厅' }, { id: 's4', label: '荣誉墙' }]
 function scrollTo(id) { document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }) }
 </script>
+
+<style scoped>
+.floating-note {
+  position: fixed;
+  color: rgba(46, 139, 87, 0.3);
+  pointer-events: none;
+  user-select: none;
+  z-index: 9999;
+  text-shadow: 0 0 20px rgba(46, 139, 87, 0.4);
+}
+.note-1 { top: 8%; left: 5%; animation: floatNote 4s ease-in-out infinite; font-size: 2.5rem; }
+.note-2 { top: 5%; right: 12%; animation: floatNote 5s ease-in-out infinite 0.5s; font-size: 2rem; }
+.note-3 { top: 15%; left: 18%; animation: floatNote 6s ease-in-out infinite 1s; font-size: 3.5rem; }
+.note-4 { top: 12%; right: 5%; animation: floatNote 4.5s ease-in-out infinite 0.3s; font-size: 3rem; }
+.note-5 { top: 25%; left: 8%; animation: floatNote 5.5s ease-in-out infinite 1.2s; font-size: 2.5rem; }
+.note-6 { top: 20%; right: 18%; animation: floatNote 7s ease-in-out infinite 2s; font-size: 4rem; }
+.note-7 { top: 35%; left: 22%; animation: floatNote 5s ease-in-out infinite 0.8s; font-size: 2.8rem; }
+.note-8 { top: 30%; right: 8%; animation: floatNote 6.5s ease-in-out infinite 1.5s; font-size: 3.5rem; }
+.note-9 { top: 45%; left: 10%; animation: floatNote 4.5s ease-in-out infinite 0.6s; font-size: 2.2rem; }
+.note-10 { top: 40%; right: 20%; animation: floatNote 7.5s ease-in-out infinite 2.5s; font-size: 3.5rem; }
+.note-11 { top: 55%; left: 25%; animation: floatNote 5.5s ease-in-out infinite 1s; font-size: 3rem; }
+.note-12 { top: 60%; right: 10%; animation: floatNote 6s ease-in-out infinite 1.8s; font-size: 2.8rem; }
+.note-13 { top: 70%; left: 8%; animation: floatNote 5s ease-in-out infinite 0.4s; font-size: 3.2rem; }
+.note-14 { top: 75%; right: 22%; animation: floatNote 7s ease-in-out infinite 2.2s; font-size: 2.5rem; }
+.note-15 { top: 85%; left: 30%; animation: floatNote 6.5s ease-in-out infinite 1.5s; font-size: 3.8rem; }
+
+@keyframes floatNote {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.3; }
+  25% { transform: translate(50px, -100px) rotate(20deg); opacity: 0.5; }
+  50% { transform: translate(-40px, -50px) rotate(-15deg); opacity: 0.35; }
+  75% { transform: translate(60px, -120px) rotate(15deg); opacity: 0.45; }
+}
+</style>
