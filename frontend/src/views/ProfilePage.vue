@@ -206,9 +206,58 @@
               </div>
               <div class="flex items-center gap-1 shrink-0">
                 <button v-if="lt.status === 'PENDING'" class="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600" title="编辑" @click="editMyLottery(lt)"><Edit2 class="w-4 h-4" /></button>
+                <button v-if="lt.status === 'ENDED' || lt.status === 'ACTIVE'" class="p-1.5 rounded-lg hover:bg-amber-50 text-gray-400 hover:text-amber-600" title="开奖" @click="drawMyLottery(lt)"><Sparkles class="w-4 h-4" /></button>
+                <button class="p-1.5 rounded-lg hover:bg-green-50 text-gray-400 hover:text-green-600" title="查看参与者" @click="openLotteryDetail(lt)"><Eye class="w-4 h-4" /></button>
                 <button class="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500" title="删除" @click="deleteMyLottery(lt)"><Trash2 class="w-4 h-4" /></button>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 抽奖详情弹窗 -->
+      <div v-if="detailLottery" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="detailLottery = null">
+        <div class="card w-full max-w-lg mx-4 max-h-[85vh] flex flex-col">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900">{{ detailLottery.title }}</h3>
+              <p class="text-xs text-gray-500 mt-0.5">{{ detailEntries.length }} 人参与</p>
+            </div>
+            <button class="p-2 text-gray-400 hover:text-gray-700" @click="detailLottery = null"><X class="w-5 h-5" /></button>
+          </div>
+          <div class="overflow-y-auto p-5 flex-1 space-y-5">
+            <div v-if="detailLoading" class="text-center py-8 text-sm text-gray-400">加载中...</div>
+            <template v-else>
+              <!-- 中奖者 -->
+              <div>
+                <h4 class="text-sm font-semibold text-amber-600 mb-3">🎉 中奖者（{{ detailWinners.length }} 人）</h4>
+                <div v-if="detailWinners.length === 0" class="text-sm text-gray-400 py-3">尚未开奖或无人中奖</div>
+                <div v-else class="space-y-2">
+                  <div v-for="(entry, i) in detailWinners" :key="'w-'+entry.id" class="flex items-center gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                    <span class="text-xs text-amber-500 w-6 text-right">{{ i + 1 }}</span>
+                    <div class="w-8 h-8 rounded-full bg-amber-200 flex items-center justify-center">
+                      <User class="w-4 h-4 text-amber-700" />
+                    </div>
+                    <p class="text-sm font-medium text-gray-900">{{ entry.userNickname || '匿名' }}</p>
+                    <span class="ml-auto px-2 py-0.5 rounded-full text-xs bg-amber-200 text-amber-800 font-medium">中奖 🎉</span>
+                  </div>
+                </div>
+              </div>
+              <!-- 参与者 -->
+              <div>
+                <h4 class="text-sm font-semibold text-gray-600 mb-3">👥 全部参与者（{{ detailOthers.length }} 人）</h4>
+                <div v-if="detailOthers.length === 0" class="text-sm text-gray-400 py-3">暂无参与者</div>
+                <div v-else class="space-y-2">
+                  <div v-for="(entry, i) in detailOthers" :key="'o-'+entry.id" class="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                    <span class="text-xs text-gray-400 w-6 text-right">{{ i + 1 }}</span>
+                    <div class="w-8 h-8 rounded-full bg-mangrove-200 flex items-center justify-center">
+                      <User class="w-4 h-4 text-mangrove-700" />
+                    </div>
+                    <p class="text-sm font-medium text-gray-900">{{ entry.userNickname || '匿名' }}</p>
+                  </div>
+                </div>
+              </div>
+            </template>
           </div>
         </div>
       </div>
@@ -324,7 +373,7 @@
 
 <script setup>
 import { computed, ref, reactive, onMounted } from 'vue'
-import { User, ChevronRight, Trash2, Edit2, Gift } from 'lucide-vue-next'
+import { User, ChevronRight, Trash2, Edit2, Gift, Eye, X, Sparkles } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
 import { useRoute, useRouter } from 'vue-router'
 import ImageUploadField from '@/components/admin/ImageUploadField.vue'
@@ -662,6 +711,18 @@ const lotterySaving = ref(false)
 const lotteryUploading = ref('')
 const lotteryError = ref('')
 const myLotteries = ref([])
+const detailLottery = ref(null)
+const detailEntries = ref([])
+const detailLoading = ref(false)
+
+const detailWinners = computed(() => {
+  const ids = detailLottery.value?.winnerUserIds || []
+  return detailEntries.value.filter(e => ids.includes(e.userId))
+})
+const detailOthers = computed(() => {
+  const ids = detailLottery.value?.winnerUserIds || []
+  return detailEntries.value.filter(e => !ids.includes(e.userId))
+})
 const myQuestions = ref([])
 
 async function fetchMyQuestions() {
@@ -732,6 +793,32 @@ async function deleteMyLottery(lt) {
     if (json.code === 200) await fetchMyLotteries()
     else alert(json.msg || '删除失败')
   } catch (e) { alert('删除失败：' + e.message) }
+}
+
+async function drawMyLottery(lt) {
+  if (!confirm(`确认开奖？将从 ${lt.entryCount} 位参与者中随机选出 ${lt.winnerCount} 位中奖者，此操作不可撤销。`)) return
+  try {
+    const res = await fetch(`/api/user/lotteries/${lt.id}/draw`, { method: 'POST', headers: { Authorization: `Bearer ${getToken()}` } })
+    const json = await res.json()
+    if (json.code === 200) {
+      alert('开奖成功！')
+      await fetchMyLotteries()
+    } else {
+      alert(json.msg || '开奖失败')
+    }
+  } catch (e) { alert('开奖失败：' + e.message) }
+}
+
+async function openLotteryDetail(lt) {
+  detailLottery.value = lt
+  detailEntries.value = []
+  detailLoading.value = true
+  try {
+    const res = await fetch(`/api/user/lotteries/${lt.id}/entries?page=0&size=200`, { headers: { Authorization: `Bearer ${getToken()}` } })
+    const json = await res.json()
+    if (json.code === 200 && json.data) detailEntries.value = json.data.content || []
+  } catch (e) { console.error('获取参与者失败:', e) }
+  finally { detailLoading.value = false }
 }
 
 async function uploadLotteryImage(event) {

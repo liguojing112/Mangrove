@@ -353,7 +353,7 @@ async function loadData() {
         })
       }
     }
-    const catRes = await fetch('/api/files/categories').catch(() => null)
+    const catRes = await fetch('/api/files/categories?type=photo').catch(() => null)
     if (catRes && catRes.ok) { const cj = await catRes.json(); if (cj.data) backendCats.value = cj.data }
     // 获取 Hero 卡片照片
     await fetchHeroCardUrls()

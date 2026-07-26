@@ -191,10 +191,16 @@ public class FileController {
     // ─── 分类管理 ───
 
     @GetMapping("/categories")
-    public Result<List<String>> listCategories() {
+    public Result<List<String>> listCategories(@RequestParam(required = false) String type) {
         try (java.sql.Connection conn = getDbConnection()) {
-            java.sql.PreparedStatement ps = conn.prepareStatement(
-                "SELECT DISTINCT category FROM file_meta WHERE category IS NOT NULL AND category != '' ORDER BY category");
+            String sql = "SELECT DISTINCT category FROM file_meta WHERE category IS NOT NULL AND category != ''";
+            if ("photo".equals(type)) {
+                sql += " AND filename REGEXP '\\.(jpg|jpeg|png|gif|webp)$'";
+            } else if ("video".equals(type)) {
+                sql += " AND filename REGEXP '\\.(mp4|webm|mov|avi)$'";
+            }
+            sql += " ORDER BY category";
+            java.sql.PreparedStatement ps = conn.prepareStatement(sql);
             java.sql.ResultSet rs = ps.executeQuery();
             List<String> list = new ArrayList<>();
             while (rs.next()) list.add(rs.getString("category"));

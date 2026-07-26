@@ -65,4 +65,27 @@ public class UserLotteryController {
         boolean entered = lotteryService.hasEntered(id, user.getId());
         return Result.success(Map.of("entered", entered));
     }
+
+    @PostMapping("/{id}/draw")
+    public Result<Lottery> draw(@PathVariable Long id, Authentication auth) {
+        Lottery lottery = lotteryService.getById(id);
+        SysUser user = sysUserRepository.findByUsername(auth.getName()).orElseThrow();
+        if (!lottery.getCreatedBy().equals(user.getId())) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "只能开奖自己的抽奖");
+        }
+        return Result.success(lotteryService.draw(id));
+    }
+
+    @GetMapping("/{id}/entries")
+    public Result<?> entries(@PathVariable Long id,
+                             @RequestParam(defaultValue = "0") int page,
+                             @RequestParam(defaultValue = "200") int size,
+                             Authentication auth) {
+        Lottery lottery = lotteryService.getById(id);
+        SysUser user = sysUserRepository.findByUsername(auth.getName()).orElseThrow();
+        if (!lottery.getCreatedBy().equals(user.getId())) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "只能查看自己抽奖的参与者");
+        }
+        return Result.success(lotteryService.listEntries(id, page, size));
+    }
 }

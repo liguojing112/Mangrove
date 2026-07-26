@@ -161,7 +161,7 @@ async function loadData() {
         })
       }
     }
-    const catRes = await fetch('/api/files/categories').catch(() => null)
+    const catRes = await fetch('/api/files/categories?type=video').catch(() => null)
     if (catRes && catRes.ok) { const cj = await catRes.json(); if (cj.data) backendCats.value = cj.data }
   } catch {} finally { loading.value = false }
 }

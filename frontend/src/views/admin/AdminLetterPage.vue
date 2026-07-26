@@ -7,7 +7,7 @@
         <button class="btn-secondary text-sm" @click="showCategoryModal = true">
           管理分类
         </button>
-        <button class="btn-primary text-sm" @click="showCreateModal = true">
+        <button class="btn-primary text-sm" @click="openCreate">
           + 添加来信
         </button>
       </div>
@@ -177,7 +177,8 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">分类</label>
-              <select v-model="formData.category" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mangrove-500" required>
+              <select v-model="formData.category" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mangrove-500">
+                <option value="">请选择分类</option>
                 <option v-for="cat in categories" :key="cat.id" :value="cat.code">{{ cat.name }}</option>
               </select>
             </div>
@@ -302,6 +303,11 @@ function closeModal() {
   editingLetter.value = null
   uploadError.value = ''
   formData.value = { title: '', category: '', content: '', source: '', noteDate: '', coverUrl: '' }
+}
+
+function openCreate() {
+  formData.value = { title: '', category: '', content: '', source: '', noteDate: '', coverUrl: '' }
+  showCreateModal.value = true
 }
 
 async function uploadLetterImage(event) {
