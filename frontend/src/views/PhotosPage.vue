@@ -60,9 +60,6 @@
             <figure v-if="slide.imageUrl" class="photo-hero-photo">
               <div class="photo-hero-photo-shine"></div>
               <img :src="slide.imageUrl" :alt="slide.heading" />
-              <figcaption v-if="slide.title" class="photo-hero-caption">
-                <span>{{ slide.title }}</span><span>{{ String(index + 1).padStart(2, '0') }}</span>
-              </figcaption>
             </figure>
             <div v-else class="photo-hero-photo photo-hero-placeholder">
               <component :is="slide.icon" :size="42" />
@@ -519,7 +516,7 @@ onMounted(loadData)
   width: min(37%, 27rem);
   overflow: hidden;
   margin: 0;
-  border: 5px solid rgba(255, 255, 255, 0.62);
+  border: none;
   border-radius: 1.25rem;
   background: rgba(7, 34, 21, 0.2);
   box-shadow: 0 24px 50px -16px rgba(5, 31, 19, 0.7);

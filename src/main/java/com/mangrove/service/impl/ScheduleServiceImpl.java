@@ -33,10 +33,10 @@ public class ScheduleServiceImpl implements ScheduleService {
     public PageResult<Schedule> list(Integer page, Integer size, String type) {
         Sort sort = Sort.by(Sort.Direction.DESC, "startTime");
         if (type != null && !type.isBlank()) {
-            Schedule.Type scheduleType = Schedule.Type.valueOf(type);
+            String scheduleType = type;
             List<Schedule> allFiltered = scheduleRepository.findAll()
                     .stream()
-                    .filter(s -> s.getScheduleType() == scheduleType)
+                    .filter(s -> scheduleType.equals(s.getScheduleType()))
                     .toList();
             return buildPageResult(allFiltered, page, size);
         }
@@ -75,9 +75,9 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .build();
 
         if (req.getScheduleType() != null && !req.getScheduleType().isBlank()) {
-            schedule.setScheduleType(Schedule.Type.valueOf(req.getScheduleType()));
+            schedule.setScheduleType(req.getScheduleType());
         } else {
-            schedule.setScheduleType(Schedule.Type.OTHER);
+            schedule.setScheduleType("OTHER");
         }
 
         if (req.getEndTime() != null && !req.getEndTime().isBlank()) {
@@ -104,7 +104,7 @@ public class ScheduleServiceImpl implements ScheduleService {
             schedule.setDescription(req.getDescription());
         }
         if (req.getScheduleType() != null && !req.getScheduleType().isBlank()) {
-            schedule.setScheduleType(Schedule.Type.valueOf(req.getScheduleType()));
+            schedule.setScheduleType(req.getScheduleType());
         }
         if (req.getLocation() != null) {
             schedule.setLocation(req.getLocation());

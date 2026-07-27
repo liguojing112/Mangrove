@@ -321,15 +321,18 @@ function typeClass(type) {
   }
 }
 
+const DEFAULT_TYPES = [
+  { value: 'PERFORMANCE', label: '演出', builtin: true },
+  { value: 'FANMEETING', label: '见面会', builtin: true },
+  { value: 'VARIETY', label: '综艺', builtin: true },
+  { value: 'AIRPORT', label: '机场', builtin: true },
+  { value: 'OTHER', label: '其他', builtin: true },
+]
+const scheduleTypes = ref(JSON.parse(localStorage.getItem('mangrove_schedule_types') || 'null') || [...DEFAULT_TYPES])
+
 function typeLabel(type) {
-  const map = {
-    PERFORMANCE: '演出',
-    FANMEETING: '见面会',
-    VARIETY: '综艺',
-    AIRPORT: '机场',
-    OTHER: '其他',
-  }
-  return map[type] || '其他'
+  const found = scheduleTypes.value.find(t => t.value === type)
+  return found ? found.label : type || '其他'
 }
 
 onMounted(() => {

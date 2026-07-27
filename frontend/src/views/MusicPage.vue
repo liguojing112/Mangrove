@@ -173,7 +173,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, Pagination, A11y } from 'swiper/modules'
 import { Play, Pause, SkipBack, SkipForward, Heart, Music, Volume2, VolumeX, Sparkles, Flame, Clock3, ChevronRight, ExternalLink, Images, X } from 'lucide-vue-next'
@@ -261,10 +261,7 @@ const filteredSongs = computed(() => {
   return activeFilter.value ? songs.value.filter(s => s.category === activeFilter.value) : songs.value
 })
 
-const durations = ref({})
-const durationSeconds = ref({})
 const progressBarRef = ref(null)
-const durationLoaders = new Set()
 const progressPercent = computed(() => {
   if (isSeeking.value) return seekPercent.value
   if (!totalDuration.value) return 0
@@ -335,18 +332,6 @@ function startSeek(e) {
 
 function togglePlay() { globalTogglePlay() }
 
-function playAdjacent(direction) {
-  if (!filteredSongs.value.some(song => song.localAudioUrl)) return
-  let index = queueIndex.value
-  for (let count = 0; count < filteredSongs.value.length; count++) {
-    index = (index + direction + filteredSongs.value.length) % filteredSongs.value.length
-    if (filteredSongs.value[index].localAudioUrl) {
-      playSong(filteredSongs.value[index])
-      return
-    }
-  }
-}
-
 function toggleLike(song) {
   const k = song.id
   const next = new Set(likedSongs.value)
@@ -354,48 +339,13 @@ function toggleLike(song) {
   likedSongs.value = next
 }
 
-function cacheDuration(url, seconds) {
-  if (!url || !seconds || !isFinite(seconds)) return
-  durationSeconds.value = { ...durationSeconds.value, [url]: seconds }
-  durations.value = { ...durations.value, [url]: formatTime(seconds) }
-}
-
 function getSongDuration(song) {
   if (!song) return '00:00'
-  return durations.value[song.url] || song.duration || '00:00'
+  return song.duration || '00:00'
 }
 
 function isCurrentSong(song) {
   return currentSong.value?.id === song.id
-}
-
-function preloadDuration(song) {
-  if (!song?.url || durationSeconds.value[song.url]) return
-
-  const audio = new Audio()
-  audio.preload = 'metadata'
-  durationLoaders.add(audio)
-
-  const cleanup = () => {
-    durationLoaders.delete(audio)
-    audio.removeAttribute('src')
-    audio.load()
-  }
-  const handleLoaded = () => {
-    cacheDuration(song.url, audio.duration)
-    cleanup()
-  }
-  const handleError = () => cleanup()
-
-  audio.addEventListener('loadedmetadata', handleLoaded, { once: true })
-  audio.addEventListener('error', handleError, { once: true })
-  audio.src = song.url
-}
-
-function preloadDurations(list) {
-  list.forEach((song, index) => {
-    window.setTimeout(() => preloadDuration(song), index * 60)
-  })
 }
 
 onMounted(async () => {
@@ -407,7 +357,6 @@ onMounted(async () => {
     if (trackJson.code === 200 && Array.isArray(trackJson.data)) {
       songs.value = trackJson.data.map((track, index) => {
         const url = track.localAudioUrl || ''
-        if (url && track.durationSeconds) cacheDuration(url, track.durationSeconds)
         return {
           ...track,
           name: track.title,
@@ -417,7 +366,7 @@ onMounted(async () => {
           url,
         }
       })
-      preloadDurations(songs.value.filter(song => song.localAudioUrl))
+      // 时长直接从数据库 durationSeconds 获取，不再预加载音频文件以避免带宽争抢导致卡顿
     }
     if (albumJson.code === 200 && Array.isArray(albumJson.data)) albums.value = albumJson.data
   } catch (error) {

@@ -267,7 +267,7 @@ public class UserTreeController {
     public Result<List<Map<String, Object>>> ranking(Authentication authentication) {
         // 任何登录用户都可以查看排行榜
         if (authentication == null) throw new BusinessException(ResultCode.UNAUTHORIZED, "请先登录");
-        List<UserTree> trees = userTreeRepository.findTop20ByOrderByTotalPointsDesc();
+        List<UserTree> trees = userTreeRepository.findTop20ByTotalPointsGreaterThanOrderByTotalPointsDesc(0);
         List<Map<String, Object>> list = trees.stream()
                 .map(t -> {
                     Map<String, Object> item = new java.util.LinkedHashMap<>();

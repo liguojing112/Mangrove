@@ -87,7 +87,7 @@
         </div>
 
         <!-- Content -->
-        <p class="text-gray-700 mt-3 text-sm leading-relaxed">{{ comment.content }}</p>
+        <div class="text-gray-700 mt-3 text-sm leading-relaxed whitespace-pre-wrap">{{ comment.content }}</div>
         <img v-if="comment.imageUrl" :src="comment.imageUrl" class="mt-3 max-h-48 rounded-lg border border-gray-200" />
 
         <!-- Footer -->

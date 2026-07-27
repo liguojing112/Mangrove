@@ -12,5 +12,5 @@ public interface UserTreeRepository extends JpaRepository<UserTree, Long> {
 
     Optional<UserTree> findByUserId(Long userId);
 
-    List<UserTree> findTop20ByOrderByTotalPointsDesc();
+    List<UserTree> findTop20ByTotalPointsGreaterThanOrderByTotalPointsDesc(Integer minPoints);
 }

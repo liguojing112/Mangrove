@@ -26,9 +26,8 @@ public class Schedule {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "schedule_type", nullable = false, columnDefinition = "ENUM('PERFORMANCE','FANMEETING','VARIETY','AIRPORT','OTHER') DEFAULT 'OTHER'")
-    private Type scheduleType;
+    @Column(name = "schedule_type", nullable = false, length = 50, columnDefinition = "VARCHAR(50) DEFAULT 'OTHER'")
+    private String scheduleType;
 
     @Column(length = 200)
     private String location;

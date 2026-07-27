@@ -5,6 +5,9 @@
       <h2 class="text-lg font-semibold text-gray-900">行程管理</h2>
       <div class="flex items-center gap-3">
         <span class="text-sm text-gray-500">共 {{ total }} 条</span>
+        <button class="btn-secondary text-sm" @click="showTypeModal = true">
+          管理类型
+        </button>
         <button class="btn-primary text-sm" @click="showCreateModal = true">
           + 新建行程
         </button>
@@ -161,11 +164,7 @@
                 v-model="formData.scheduleType"
                 class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-mangrove-500"
               >
-                <option value="PERFORMANCE">演出</option>
-                <option value="FANMEETING">见面会</option>
-                <option value="VARIETY">综艺</option>
-                <option value="AIRPORT">机场</option>
-                <option value="OTHER">其他</option>
+                <option v-for="t in scheduleTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
               </select>
             </div>
             <div>
@@ -239,6 +238,29 @@
         </div>
       </div>
     </div>
+    <!-- Type Management Modal -->
+    <div v-if="showTypeModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showTypeModal = false">
+      <div class="card p-6 w-full max-w-lg mx-4">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">行程类型管理</h3>
+        </div>
+        <div class="space-y-2 mb-4">
+          <div v-for="(t, i) in scheduleTypes" :key="t.value" class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl">
+            <span class="flex-1 text-sm text-gray-900">{{ t.label }}</span>
+            <span class="text-xs text-gray-400">{{ t.value }}</span>
+            <button v-if="!t.builtin" class="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500" @click="removeType(i)"><Trash2 class="w-4 h-4" /></button>
+          </div>
+        </div>
+        <div class="flex gap-2 items-center">
+          <input v-model="newTypeName" placeholder="新类型名称（如：生日）" class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mangrove-400" />
+          <button class="btn-primary text-sm" @click="addType">添加</button>
+        </div>
+        <div class="flex justify-end mt-4">
+          <button class="btn-secondary text-sm" @click="showTypeModal = false">关闭</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -258,6 +280,36 @@ const scheduleMedia = ref([])
 const mediaLoading = ref(false)
 const uploadingMedia = ref(false)
 const mediaError = ref('')
+const showTypeModal = ref(false)
+const newTypeName = ref('')
+
+const DEFAULT_TYPES = [
+  { value: 'PERFORMANCE', label: '演出', builtin: true },
+  { value: 'FANMEETING', label: '见面会', builtin: true },
+  { value: 'VARIETY', label: '综艺', builtin: true },
+  { value: 'AIRPORT', label: '机场', builtin: true },
+  { value: 'OTHER', label: '其他', builtin: true },
+]
+const scheduleTypes = ref(JSON.parse(localStorage.getItem('mangrove_schedule_types') || 'null') || [...DEFAULT_TYPES])
+
+function saveTypes() {
+  localStorage.setItem('mangrove_schedule_types', JSON.stringify(scheduleTypes.value))
+}
+
+function addType() {
+  const name = newTypeName.value.trim()
+  if (!name) return
+  const value = name.toUpperCase().replace(/[^A-Z0-9\u4e00-\u9fff]/g, '_')
+  if (scheduleTypes.value.some(t => t.value === value)) return alert('类型已存在')
+  scheduleTypes.value.push({ value, label: name, builtin: false })
+  saveTypes()
+  newTypeName.value = ''
+}
+
+function removeType(index) {
+  scheduleTypes.value.splice(index, 1)
+  saveTypes()
+}
 
 const formData = ref({
   title: '',
@@ -507,14 +559,8 @@ function typeClass(type) {
 }
 
 function typeLabel(type) {
-  const map = {
-    PERFORMANCE: '演出',
-    FANMEETING: '见面会',
-    VARIETY: '综艺',
-    AIRPORT: '机场',
-    OTHER: '其他',
-  }
-  return map[type] || '其他'
+  const found = scheduleTypes.value.find(t => t.value === type)
+  return found ? found.label : type || '其他'
 }
 
 onMounted(() => {

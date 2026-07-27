@@ -1,4 +1,4 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 
 const currentSong = ref(null)
 const isPlaying = ref(false)
@@ -15,7 +15,6 @@ let timeUpdateTimer = null
 function getAudio() {
   if (!audioEl) {
     audioEl = new Audio()
-    audioEl.loop = true
     audioEl.volume = volume.value
     audioEl.addEventListener('ended', onEnded)
     audioEl.addEventListener('loadedmetadata', onMetadata)
@@ -63,6 +62,7 @@ export function useAudioPlayer() {
     if (!song?.url) return
     const a = getAudio()
     a.src = song.url
+    a.load()
     a.play().then(() => {
       isPlaying.value = true
       startTimer()

@@ -78,8 +78,8 @@
       <div v-else-if="displayedVideos.length === 0" class="py-24 text-center text-sm text-gray-400"><Video class="mx-auto mb-3 h-10 w-10 text-gray-300" />没有找到短视频</div>
 
       <!-- 保留原有两列瀑布流布局 -->
-      <section v-else class="columns-2 gap-3" aria-label="短视频列表">
-        <button v-for="v in displayedVideos" :key="v.id" type="button" class="video-card group relative mb-3 block w-full break-inside-avoid overflow-hidden rounded-lg bg-black text-left shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-green-500/20" @click="openVideo(v)">
+      <section v-else class="grid grid-cols-2 gap-3" aria-label="短视频列表">
+        <button v-for="v in displayedVideos" :key="v.id" type="button" class="video-card group relative block w-full overflow-hidden rounded-lg bg-black text-left shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-green-500/20" @click="openVideo(v)">
           <img v-if="v.coverUrl" :src="v.coverUrl" class="max-h-[400px] w-full bg-black object-cover transition-transform duration-300 group-hover:scale-[1.10]" loading="lazy" @error="e => e.target.style.display='none'" />
           <video v-else :src="v.thumbnailUrl" muted class="max-h-[400px] w-full bg-black object-cover transition-transform duration-300 group-hover:scale-[1.10]" preload="metadata" @loadeddata="$event.target.currentTime=0.5" />
           <span class="absolute inset-0 bg-black/5 transition-colors group-hover:bg-black/20"></span>
