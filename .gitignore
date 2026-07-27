@@ -48,3 +48,4 @@ frontend/cloudflared.exe.exe
 
 # Environment
 .env
+.zcode/
