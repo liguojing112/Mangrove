@@ -360,6 +360,7 @@ function getShowcaseImage(item) {
   if (item.extraData?.fileUrl) return item.extraData.fileUrl
   if (item.itemType === 'WORK') {
     const work = getWorkById(item.targetId)
+    if (work?.coverUrl) return work.coverUrl
     if (work?.fileUrl) return work.fileUrl
   }
   return null
@@ -374,9 +375,12 @@ function getShowcaseTitle(item) {
 }
 
 function getItemImage(item) {
+  // 优先用 extraData 中的 fileUrl（显示大图）
   if (item.extraData?.fileUrl) return item.extraData.fileUrl
   if (item.itemType === 'WORK') {
     const work = getWorkById(item.targetId)
+    // 有 coverUrl 优先用封面（缩略图），否则用 fileUrl
+    if (work?.coverUrl) return work.coverUrl
     if (work?.fileUrl) return work.fileUrl
   }
   return null
