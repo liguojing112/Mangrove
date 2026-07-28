@@ -166,6 +166,11 @@ public class AdminFanWorkController {
     public Result<Void> delete(@PathVariable Long id) {
         FanWork work = fanWorkRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ResultCode.NOT_FOUND, "作品不存在"));
+
+        // 同时删除对应的 work_section_item 记录
+        workSectionItemRepository.deleteBySectionAndItemTypeAndTargetId(
+                WorkSectionItem.Section.PREVIEW, WorkSectionItem.ItemType.WORK, id);
+
         fanWorkRepository.delete(work);
         return Result.success();
     }
