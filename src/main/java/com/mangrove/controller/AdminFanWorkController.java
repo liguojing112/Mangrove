@@ -5,7 +5,9 @@ import com.mangrove.common.ResultCode;
 import com.mangrove.common.exception.BusinessException;
 import com.mangrove.dto.response.PageResult;
 import com.mangrove.entity.FanWork;
+import com.mangrove.entity.WorkSectionItem;
 import com.mangrove.repository.FanWorkRepository;
+import com.mangrove.repository.WorkSectionItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -14,7 +16,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/works")
@@ -23,6 +28,7 @@ import java.util.List;
 public class AdminFanWorkController {
 
     private final FanWorkRepository fanWorkRepository;
+    private final WorkSectionItemRepository workSectionItemRepository;
 
     @GetMapping("/pending")
     public Result<PageResult<FanWork>> listPending(@RequestParam(defaultValue = "0") int page,
@@ -82,8 +88,35 @@ public class AdminFanWorkController {
             throw new BusinessException(ResultCode.BAD_REQUEST, "该作品不在待审核状态");
         }
 
+        // 审核通过后自动添加到 PREVIEW 创作专区
+        addToPreviewSection(work);
+
         work.setStatus(FanWork.Status.PUBLISHED);
         return Result.success(fanWorkRepository.save(work));
+    }
+
+    /**
+     * 将审核通过的作品自动加入 PREVIEW 创作专区
+     */
+    private void addToPreviewSection(FanWork work) {
+        boolean exists = workSectionItemRepository
+                .existsBySectionAndItemTypeAndTargetId(WorkSectionItem.Section.PREVIEW, WorkSectionItem.ItemType.WORK, work.getId());
+        if (exists) return;
+
+        Map<String, Object> extraData = new HashMap<>();
+        extraData.put("title", work.getTitle());
+        extraData.put("category", work.getCategory().name());
+        extraData.put("fileUrl", work.getFileUrl());
+
+        WorkSectionItem item = WorkSectionItem.builder()
+                .section(WorkSectionItem.Section.PREVIEW)
+                .itemType(WorkSectionItem.ItemType.WORK)
+                .targetId(work.getId())
+                .sortOrder(0)
+                .extraData(extraData)
+                .createdAt(LocalDateTime.now())
+                .build();
+        workSectionItemRepository.save(item);
     }
 
     @PostMapping("/{id}/reject")
