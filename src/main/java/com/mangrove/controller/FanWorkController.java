@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,15 +42,16 @@ public class FanWorkController {
                                             @RequestParam(required = false) String category) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         List<FanWork> works;
+        List<FanWork.Status> visibleStatuses = Arrays.asList(FanWork.Status.PUBLISHED, FanWork.Status.FEATURED);
         if (category != null && !category.isBlank()) {
             try {
                 FanWork.Category cat = FanWork.Category.valueOf(category.toUpperCase());
-                works = fanWorkRepository.findByStatusAndCategory(FanWork.Status.PUBLISHED, cat, pageable);
+                works = fanWorkRepository.findByStatusInAndCategory(visibleStatuses, cat, pageable);
             } catch (IllegalArgumentException e) {
                 throw new BusinessException(ResultCode.BAD_REQUEST, "无效的分类参数");
             }
         } else {
-            works = fanWorkRepository.findByStatus(FanWork.Status.PUBLISHED, pageable);
+            works = fanWorkRepository.findByStatusIn(visibleStatuses, pageable);
         }
         PageResult<FanWork> result = PageResult.<FanWork>builder()
                 .content(works)

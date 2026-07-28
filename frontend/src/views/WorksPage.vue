@@ -66,37 +66,37 @@
       </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-24">
+	    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-24">
 
-      <!-- 高清路透专区 -->
-      <section id="s1" class="space-y-6 scroll-mt-28">
-        <div class="flex items-center gap-3">
-          <span class="w-1 h-8 bg-amber-400 rounded-full"></span>
-          <div><h2 class="text-2xl font-light text-gray-800">高清路透专区</h2><p class="text-gray-500 text-xs mt-0.5">线下活动 · 机场上班路 · 无水印精修存档</p></div>
-          <span class="ml-auto bg-red-500/20 text-red-400 text-xs px-2 py-0.5 rounded-full">HOT</span>
-        </div>
-        <div v-if="loading" class="text-center py-8">
-          <p class="text-gray-400">加载中...</p>
-        </div>
-        <div v-else-if="previewItems.length === 0" class="text-center py-8">
-          <p class="text-gray-400">暂无作品</p>
-        </div>
-        <div v-else class="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4">
-          <div v-for="item in previewItems" :key="item.id" class="shrink-0 w-[300px] md:w-[360px] group cursor-pointer">
-            <div class="aspect-[16/10] rounded-xl overflow-hidden border-[4.5px] border-teal-200 hover:border-teal-400 transition-all bg-white relative">
-              <img v-if="getItemImage(item)" :src="getItemImage(item)" class="absolute inset-0 w-full h-full object-cover" @error="$event.target.style.display='none'" />
-              <div v-else class="absolute inset-0 flex items-center justify-center"><span class="text-4xl opacity-15">📸</span></div>
-              <div class="absolute top-3 left-3"><span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-400">{{ item.extraData?.category || getWorkById(item.targetId)?.category || '作品' }}</span></div>
-              <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90">
-                <h3 class="text-gray-800 text-sm font-medium truncate">{{ item.extraData?.title || getWorkById(item.targetId)?.title || '未命名' }}</h3>
-                <div class="flex items-center gap-3 mt-1 text-xs text-gray-400"><span>👁 {{ getWorkById(item.targetId)?.viewCount || 0 }}</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+	      <!-- 高清路透专区 -->
+	      <section id="s1" class="space-y-6 scroll-mt-28">
+	        <div class="flex items-center gap-3">
+	          <span class="w-1 h-8 bg-amber-400 rounded-full"></span>
+	          <div><h2 class="text-2xl font-light text-gray-800">高清路透专区</h2><p class="text-gray-500 text-xs mt-0.5">线下活动 · 机场上班路 · 无水印精修存档</p></div>
+	          <span class="ml-auto bg-red-500/20 text-red-400 text-xs px-2 py-0.5 rounded-full">HOT</span>
+	        </div>
+	        <div v-if="loading" class="text-center py-8">
+	          <p class="text-gray-400">加载中...</p>
+	        </div>
+	        <div v-else-if="previewItems.length === 0" class="text-center py-8">
+	          <p class="text-gray-400">暂无作品</p>
+	        </div>
+	        <div v-else class="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4">
+	          <div v-for="item in previewItems" :key="item.id" class="shrink-0 w-[300px] md:w-[360px] group cursor-pointer">
+	            <div class="aspect-[16/10] rounded-xl overflow-hidden border-[4.5px] border-teal-200 hover:border-teal-400 transition-all bg-white relative">
+	              <img v-if="getItemImage(item)" :src="getItemImage(item)" class="absolute inset-0 w-full h-full object-cover" @error="$event.target.style.display='none'" />
+	              <div v-else class="absolute inset-0 flex items-center justify-center"><span class="text-4xl opacity-15">📸</span></div>
+	              <div class="absolute top-3 left-3"><span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-400">{{ item.extraData?.category || getWorkById(item.targetId)?.category || '作品' }}</span></div>
+	              <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90">
+	                <h3 class="text-gray-800 text-sm font-medium truncate">{{ item.extraData?.title || getWorkById(item.targetId)?.title || '未命名' }}</h3>
+	                <div class="flex items-center gap-3 mt-1 text-xs text-gray-400"><span>👁 {{ getWorkById(item.targetId)?.viewCount || 0 }}</span></div>
+	              </div>
+	            </div>
+	          </div>
+	        </div>
+	      </section>
 
-      <!-- 优秀产出创作者榜 -->
+	      <!-- 优秀产出创作者榜 -->
       <section id="s2" class="space-y-6 scroll-mt-28">
         <div class="flex items-center gap-3">
           <span class="w-1 h-8 bg-amber-400 rounded-full"></span>
@@ -184,35 +184,6 @@
           </div>
         </div>
       </section>
-
-      <!-- 高清路透专区 -->
-      <section id="s1" class="space-y-6 scroll-mt-28">
-        <div class="flex items-center gap-3">
-          <span class="w-1 h-8 bg-amber-400 rounded-full"></span>
-          <div><h2 class="text-2xl font-light text-gray-800">高清路透专区</h2><p class="text-gray-500 text-xs mt-0.5">线下活动 · 机场上班路 · 无水印精修存档</p></div>
-          <span class="ml-auto bg-red-500/20 text-red-400 text-xs px-2 py-0.5 rounded-full">HOT</span>
-        </div>
-        <div v-if="loading" class="text-center py-8">
-          <p class="text-gray-400">加载中...</p>
-        </div>
-        <div v-else-if="previewItems.length === 0" class="text-center py-8">
-          <p class="text-gray-400">暂无作品</p>
-        </div>
-        <div v-else class="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4">
-          <div v-for="item in previewItems" :key="item.id" class="shrink-0 w-[300px] md:w-[360px] group cursor-pointer">
-            <div class="aspect-[16/10] rounded-xl overflow-hidden border-[4.5px] border-teal-200 hover:border-teal-400 transition-all bg-white relative">
-              <img v-if="getItemImage(item)" :src="getItemImage(item)" class="absolute inset-0 w-full h-full object-cover" @error="$event.target.style.display='none'" />
-              <div v-else class="absolute inset-0 flex items-center justify-center"><span class="text-4xl opacity-15">📸</span></div>
-              <div class="absolute top-3 left-3"><span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-400">{{ item.extraData?.category || getWorkById(item.targetId)?.category || '作品' }}</span></div>
-              <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90">
-                <h3 class="text-gray-800 text-sm font-medium truncate">{{ item.extraData?.title || getWorkById(item.targetId)?.title || '未命名' }}</h3>
-                <div class="flex items-center gap-3 mt-1 text-xs text-gray-400"><span>👁 {{ getWorkById(item.targetId)?.viewCount || 0 }}</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
     </div>
 
     <!-- Submit Modal -->

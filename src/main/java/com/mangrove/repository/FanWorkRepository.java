@@ -12,6 +12,10 @@ public interface FanWorkRepository extends JpaRepository<FanWork, Long> {
 
     List<FanWork> findByStatusAndCategory(FanWork.Status status, FanWork.Category category, Pageable pageable);
 
+    List<FanWork> findByStatusIn(List<FanWork.Status> statuses, Pageable pageable);
+
+    List<FanWork> findByStatusInAndCategory(List<FanWork.Status> statuses, FanWork.Category category, Pageable pageable);
+
     List<FanWork> findByCreatorId(Long creatorId, Pageable pageable);
 
     List<FanWork> findByArtistId(Long artistId, Pageable pageable);
